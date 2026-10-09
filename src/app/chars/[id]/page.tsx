@@ -3,6 +3,7 @@
 // 스크롤: 정보가 길면 페이지가 이어지고 탭·아트는 스티키 (v1.9)
 // AU 선택 시 프로필 전체(이름·스펙·아트·탭·소개)가 그 AU의 값으로 전환 (charWithAu) —
 // 편집은 EDIT → /chars/[id]/edit?au= 전용 페이지에서 새 프로필처럼 작성 (v1.9 사용자 확정)
+import { TagList } from '@/components/ui/TagList';
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -255,7 +256,8 @@ function CharDetailInner() {
             fontWeight: (eff.nameBold ?? true) ? 600 : 400,
             letterSpacing: '.2em', lineHeight: 1.1,
           }}>{eff.name}</div>
-          <div className="sub" style={{ marginBottom: 14 }}>{eff.sub}</div>
+          <div className="sub" style={{ marginBottom: eff.tags?.length ? 6 : 14 }}>{eff.sub}</div>
+          <TagList tags={eff.tags} style={{ marginBottom: 14 }} />
 
           {tab === 'basic' ? (
             <>

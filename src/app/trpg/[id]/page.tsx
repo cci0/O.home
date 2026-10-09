@@ -17,6 +17,7 @@ import { ColorField } from '@/components/ui/ColorField';
 import { CropEditor, CropImg, CropValue } from '@/components/ui/CropEditor';
 import { useToast } from '@/components/ui/Toast';
 import { parseTags } from '@/lib/tagUtil';
+import { TagList } from '@/components/ui/TagList';
 
 /** 로그 렌더 프레임 — 대형 문서도 안정적으로 로드되도록 srcdoc 대신 Blob URL 사용 */
 function LogFrame({ frameRef, html, title, onFrameLoad }: {
@@ -325,6 +326,7 @@ html,body{margin:0!important;padding:0!important;height:auto!important;min-heigh
       <div className="page-head">
         <PageTitle href={tt.href}>{tt.title}</PageTitle>
         <p>{logNo(l)}{[l.writer, l.withText].filter(Boolean).map(x => ` · ${x}`).join('')}{l.date ? ` · ${l.date.replace(/-/g, '.')}` : ''}</p>
+        <TagList tags={l.tags} style={{ marginTop: 6 }} />
         <div className="head-actions">
           {rel && <button className="btn btn-dark" onClick={() => router.push(`/rels/${rel.id}`)}>{rel.name} ›</button>}
           {isAdmin && <button className="btn btn-dark" onClick={() => {

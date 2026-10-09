@@ -10,6 +10,7 @@ import { backend, isServerMode } from '@/lib/backend';
 import { useSectionParam, filterSection, sectionSetter, secQuery } from '@/lib/sectionStore';
 import { SearchBar, FitText } from '@/components/ui/Kit';
 import { TagFilter } from '@/components/ui/TagFilter';
+import { TagList } from '@/components/ui/TagList';
 import { tagCounts, hasAllTags, tagMatches, useTagFilter } from '@/lib/tagUtil';
 import { CroppedBlobImg } from '@/components/ui/CropEditor';
 
@@ -87,6 +88,7 @@ function CharsInner() {
                 <b style={{ minWidth: 0, flex: 1 }}><FitText>{c.name}</FitText></b>
                 <i style={{ background: c.color }} />
               </div>
+              <TagList tags={c.tags} max={3} style={{ padding: '0 14px 12px', marginTop: -4, fontSize: 11 }} />
             </div>
           );
         })}

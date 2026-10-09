@@ -8,6 +8,7 @@ import { useLocalList } from '@/lib/postStore';
 import { Relation, REL_SEED, Character, CHAR_SEED, relPath } from '@/lib/charStore';
 import { SearchBar } from '@/components/ui/Kit';
 import { TagFilter } from '@/components/ui/TagFilter';
+import { TagList } from '@/components/ui/TagList';
 import { tagCounts, hasAllTags, tagMatches, useTagFilter } from '@/lib/tagUtil';
 import { useToast } from '@/components/ui/Toast';
 import { CroppedBlobImg } from '@/components/ui/CropEditor';
@@ -79,6 +80,7 @@ export default function RelsPage() {
                     {r.members.map(m => <i key={m.charId} style={{ background: colorOf(m.charId) }} />)}
                   </div>
                 )}
+                <TagList tags={r.tags} max={4} style={{ marginTop: 6, fontSize: 11 }} />
               </div>
             </div>
           );

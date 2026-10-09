@@ -15,6 +15,7 @@ import { putBlob } from '@/lib/blobStore';
 import { ColorField } from '@/components/ui/ColorField';
 import { CropEditor, CroppedBlobImg, CropValue, CropImg } from '@/components/ui/CropEditor';
 import { useToast } from '@/components/ui/Toast';
+import { TagList } from '@/components/ui/TagList';
 import { parseTags, tagCounts, hasAllTags, tagMatches, useTagFilter } from '@/lib/tagUtil';
 
 import { useSiteSettings } from '@/lib/siteStore';
@@ -266,6 +267,7 @@ function TrpgPageInner() {
         {l.writer && <div className="row"><b>라이터</b> {l.writer}</div>}
         {l.withText && <div className="row"><b>동행</b> {l.withText}</div>}
         {l.date && <div className="row"><b>날짜</b> {l.date.replace(/-/g, '.')}</div>}
+        {(l.tags ?? []).length > 0 && <div className="row"><b>태그</b> {(l.tags ?? []).map(t => `#${t}`).join(' ')}</div>}
         <div className="adm"><span>{site.subtitle}</span><span>{logNo(l)}</span></div>
       </div>
     </div>
@@ -312,6 +314,7 @@ function TrpgPageInner() {
                       {/* 나만보기 등도 목록엔 뜨므로(v2.0) — 못 여는 로그는 왜 못 여는지 표시 */}
                       {!canOpen(l) && <span className="pill" style={{ marginLeft: 6 }}>{l.password ? '비밀번호 필요' : '비공개'}</span>}
                       <small>{[l.writer, l.withText].filter(Boolean).join(' · ')}{l.date ? ` · ${l.date.replace(/-/g, '.')}` : ''}</small>
+                      <TagList tags={l.tags} max={5} style={{ marginTop: 3, fontSize: 11 }} />
                     </div>
                   </div>
                 ))}

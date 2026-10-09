@@ -2,6 +2,7 @@
 // 자관 상세 (4.5) — 2인: 헤더 블러 + 대형 타이틀 + 좌우 카드 + 중앙 일러(전신/일러 토글) + AU
 // 하단: TIMELINE / QUESTIONS 탭 (v1.8) + 역극·로그 연동 리스트 · 다인(3인+): 멤버 리스트형
 // 관리자: 멤버 추가(내/상대 캐릭터) · 타임라인 항목 추가 · 질문 추가
+import { TagList } from '@/components/ui/TagList';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
@@ -906,6 +907,7 @@ export default function RelDetailPage() {
         <div className="catch" style={{ color: auSt.cpColor }}>
           {au?.catchphrase || rel.catchphrase}
         </div>
+        <TagList tags={rel.tags} style={{ justifyContent: 'center', marginTop: 8 }} />
         {isDuo && pairSlots[1] && (
           <div className="quote r" style={{
             color: pairSlots[1].quoteColor,
