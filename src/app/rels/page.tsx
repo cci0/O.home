@@ -7,6 +7,8 @@ import { useAuth } from '@/lib/auth';
 import { useLocalList } from '@/lib/postStore';
 import { Relation, REL_SEED, Character, CHAR_SEED, relPath } from '@/lib/charStore';
 import { SearchBar } from '@/components/ui/Kit';
+import { TagFilter } from '@/components/ui/TagFilter';
+import { tagCounts, hasAllTags, tagMatches, useTagFilter } from '@/lib/tagUtil';
 import { useToast } from '@/components/ui/Toast';
 import { CroppedBlobImg } from '@/components/ui/CropEditor';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
@@ -21,11 +23,13 @@ export default function RelsPage() {
   const [rels, setRels] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
   const [chars] = useLocalList<Character>('ohome.chars.v1', CHAR_SEED);
   const [q, setQ] = useState('');
+  const [tagSel, toggleTag, clearTags] = useTagFilter();   // 자유 태그 필터
 
   const colorOf = (id: string) => chars.find(c => c.id === id)?.color ?? '#666';
   const visible = rels
     .filter(r => isAdmin || r.visibility !== 'private')
-    .filter(r => !q || r.name.toLowerCase().includes(q.toLowerCase()));
+    .filter(r => hasAllTags(r, tagSel))
+    .filter(r => !q || r.name.toLowerCase().includes(q.toLowerCase()) || tagMatches(r, q));
 
   // 편집모드 카드 드래그 정렬 (v1.9)
   const sort = useCardSort(visible, next => setRels(mergeOrder(rels, next)), editOn && isAdmin);
@@ -40,6 +44,8 @@ export default function RelsPage() {
           {isAdmin && <button className="btn btn-dark" onClick={() => router.push('/rels/new')}>＋ ADD RELATION</button>}
         </div>
       </div>
+      <TagFilter counts={tagCounts(rels.filter(r => isAdmin || r.visibility !== 'private'))}
+        selected={tagSel} onToggle={toggleTag} onClear={clearTags} />
       <div className="g3 rels-grid">
         {visible.map((r, i) => {
           const memberLocked = r.visibility === 'member' && !user;

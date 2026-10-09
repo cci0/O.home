@@ -15,12 +15,14 @@ import { CropEditor, CropValue, CropImg } from '@/components/ui/CropEditor';
 import { DragList } from '@/components/ui/DragList';
 import { Lightbox } from '@/components/ui/Lightbox';
 import { useConfirmDelete } from '@/components/ui/Modal';
+import { parseTags } from '@/lib/tagUtil';
 import { fileDrop } from '@/lib/dnd';
 import { useToast } from '@/components/ui/Toast';
 
 export interface RelFormValue {
   slug?: string;             // 페이지 주소 /rels/{slug} (v1.9 — 신규 등록 시, 비우면 자동 id)
   name: string;
+  tags?: string[];           // 자유 태그 — 목록 필터·검색용
   catchphrase: string;
   kind: 'pair' | 'multi';
   visibility: Visibility;
@@ -174,6 +176,7 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
   const [name, setName] = useState(initial?.name ?? '');
   // 페이지 주소 /rels/{slug} — 신규는 비우면 자동(id). 수정에서도 바꿀 수 있다 (v2.0 사용자 요청)
   const [slug, setSlug] = useState(initial?.slug ?? '');
+  const [tagsText, setTagsText] = useState((initial?.tags ?? []).join(', '));   // 자유 태그
   const [catchphrase, setCatchphrase] = useState(auObj ? auObj.catchphrase : (initial?.catchphrase ?? ''));
   const [visibility, setVisibility] = useState<Visibility>(initial?.visibility ?? 'public');
   const [cp, setCp] = useState<RelCpTag>(initial?.cp ?? 'cp');   // CP/NCP (v1.9)
@@ -312,6 +315,7 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
       // 수정에서 정한 주소는 별명으로 (v2.0) — 신규는 rels/new가 이 값을 id로 쓴다
       slug: slug.trim() || undefined,
       name: name.trim().toUpperCase(),
+      tags: parseTags(tagsText),
       catchphrase: catchphrase.trim(),
       kind, visibility, fontId, bodyFontId,
       arts: artIds,
@@ -665,6 +669,8 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
               </div>
             )}
             <KInput placeholder="캐치프레이즈" value={catchphrase} onChange={e => setCatchphrase(e.target.value)} />
+            {/* 자유 태그 — 자관 소관이라 AU 편집에서는 숨김 */}
+            {!auId && <KInput placeholder="태그 (선택 — 쉼표로 구분)" value={tagsText} onChange={e => setTagsText(e.target.value)} />}
             {/* 자관명·캐치프레이즈 글씨색 (v1.9 사용자 요청) — 기본은 테마색. AU마다 따로 정할 수 있다 (v2.0) */}
             {(
               <div>

@@ -64,6 +64,8 @@ export interface TrpgLog {
   writer: string;            // 라이터 (필수)
   withText: string;          // 같이 간 사람 표기 (필수)
   relId?: string;            // 자관 연동 (필터)
+  /** 자유 태그 — 자관과 별개로 직접 달고, 목록 필터에 쓴다. 없으면 태그 없음 (옛 로그 호환) */
+  tags?: string[];
   date?: string;             // 선택
   ph: string;
   thumbUrl?: string;

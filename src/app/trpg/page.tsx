@@ -15,6 +15,7 @@ import { putBlob } from '@/lib/blobStore';
 import { ColorField } from '@/components/ui/ColorField';
 import { CropEditor, CroppedBlobImg, CropValue, CropImg } from '@/components/ui/CropEditor';
 import { useToast } from '@/components/ui/Toast';
+import { parseTags, tagCounts, hasAllTags, tagMatches, useTagFilter } from '@/lib/tagUtil';
 
 import { useSiteSettings } from '@/lib/siteStore';
 import { useMainStore } from '@/lib/mainStore';
@@ -39,6 +40,7 @@ function TrpgPageInner() {
   const [rels] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
   const { editOn } = useMainStore();          // 편집모드 — 상단바 토글 (다른 목록과 공통)
   const [filter, setFilter] = useState<string>('all');
+  const [tagFilter, toggleTag, clearTags] = useTagFilter();   // 고른 태그 — 모두 달린 로그만 (AND)
   const [skin, setSkin] = useState<'ticket' | 'basic'>('ticket');
   const [q, setQ] = useState('');
   // 모바일은 티켓 스킨 대신 항상 기본형 리스트 — 좁은 폭에서 티켓이 뭉개지지 않게 (v1.9 사용자 확정)
@@ -61,6 +63,7 @@ function TrpgPageInner() {
   const [nWriter, setNWriter] = useState('');
   const [nWith, setNWith] = useState('');
   const [nRel, setNRel] = useState('none');
+  const [nTags, setNTags] = useState('');          // 자유 태그 — 쉼표로 구분
   const [nDate, setNDate] = useState('');
   const [nMode, setNMode] = useState<'file' | 'paste'>('paste');
   const [nBody, setNBody] = useState('');
@@ -82,6 +85,7 @@ function TrpgPageInner() {
     logs.forEach(l => { const k = l.relId ?? 'none'; m[k] = (m[k] ?? 0) + 1; });
     return m;
   }, [logs]);
+  const tagList = useMemo(() => tagCounts(logs), [logs]);   // 쓰인 태그와 개수
 
   // 목록에 뜰지는 오직 listHidden — 접근권한(visibility)은 "누가 열 수 있는지"만 정하고
   // 목록에 나오는지는 정하지 않는다 (v2.0 사용자 확정: "나만보기여도 목록에는 표시돼야해").
@@ -92,7 +96,8 @@ function TrpgPageInner() {
     // 편집모드에서는 관리자에게만 예외로 보여 되돌릴 수 있게 한다
     .filter(l => !l.listHidden || (isAdmin && editOn))
     .filter(l => filter === 'all' || (filter === 'none' ? !l.relId : l.relId === filter))
-    .filter(l => !q || l.title.includes(q) || l.writer.includes(q) || l.withText.includes(q));
+    .filter(l => hasAllTags(l, tagFilter))
+    .filter(l => !q || l.title.includes(q) || l.writer.includes(q) || l.withText.includes(q) || tagMatches(l, q));
   // 정렬 기준은 저장된 순서 — 편집모드에서 드래그로 바꾼 순서가 그대로 목록에 반영된다 (v2.0).
   // 새 로그는 앞에 넣으므로 기본은 지금까지처럼 최신순이고, № 번호는 표시용으로만 남는다.
 
@@ -120,7 +125,7 @@ function TrpgPageInner() {
   const logCur = Math.min(logPage, logPages);        // 필터로 줄어 페이지가 사라지면 마지막으로 당긴다
   const logStart = (logCur - 1) * PER_LOG;
   // 필터·검색·보기 방식을 바꾸면 1페이지부터
-  useEffect(() => { setLogPage(1); }, [filter, q, ticketView]);
+  useEffect(() => { setLogPage(1); }, [filter, tagFilter, q, ticketView]);
   const pageLogs = visible.slice(logStart, logStart + PER_LOG);
 
   /** 이 페이지 안에서 바뀐 순서를 전체 순서에 되꽂는다 —
@@ -195,6 +200,7 @@ function TrpgPageInner() {
       title: nTitle.trim(), catchphrase: nCatch.trim() || undefined,
       writer: nWriter.trim(), withText: nWith.trim(),
       relId: nRel === 'none' ? undefined : nRel,
+      tags: parseTags(nTags),
       date: nDate || undefined, ph: 'cool',
       visibility: nVis,
       password: nPw.trim() || undefined,
@@ -222,7 +228,7 @@ function TrpgPageInner() {
     // 본문은 id로만 찾으므로 순서는 아무 의미가 없다.
     setBodies([...bodies, body]);
     setAddOpen(false);
-    setNNo(''); setNVis('public'); setNPw(''); setNListHidden(false); setNTitle(''); setNCatch(''); setNWriter(''); setNWith(''); setNBody(''); setNFileName(''); setNDate(''); setNFile(null);
+    setNNo(''); setNVis('public'); setNPw(''); setNListHidden(false); setNTitle(''); setNCatch(''); setNWriter(''); setNWith(''); setNTags(''); setNBody(''); setNFileName(''); setNDate(''); setNFile(null);
     setNThumb(null); setNThumbUrl(''); setNThumbCrop(undefined);
     toast(nFile ? '로그가 등록되었습니다 — 원본 파일도 보관됩니다' : '로그가 등록되었습니다');
   };
@@ -346,6 +352,20 @@ function TrpgPageInner() {
               단발 <small>{counts['none']}</small>
             </div>
           )}
+          {/* 자유 태그 필터 — 여러 개를 고르면 모두 달린 로그만 */}
+          {tagList.length > 0 && (
+            <>
+              <h4 style={{ marginTop: 18 }}>태그 필터</h4>
+              {tagFilter.length > 0 && (
+                <div className="tag" onClick={clearTags}>선택 해제 ✕</div>
+              )}
+              {tagList.map(([t, n]) => (
+                <div key={t} className={`tag ${tagFilter.includes(t) ? 'on' : ''}`} onClick={() => toggleTag(t)}>
+                  #{t} <small>{n}</small>
+                </div>
+              ))}
+            </>
+          )}
           {/* 모바일은 항상 기본형 — 스킨 선택 숨김 (v1.9) */}
           {!isMobile && (
             <>
@@ -382,6 +402,7 @@ function TrpgPageInner() {
               options={[{ value: 'none', label: '자관 연동 없음' }, ...rels.map(r => ({ value: r.id, label: r.name }))]} />
             <KDate value={nDate} onChange={setNDate} style={{ flex: 1 }} />
           </div>
+          <KInput placeholder="태그 (선택 — 쉼표로 구분)" value={nTags} onChange={e => setNTags(e.target.value)} />
           {/* 접근권한 + 열람 비밀번호 (선택) — 권한이 없어도 비밀번호를 아는 사람은 열람 가능.
               연동 자관의 상대방(회원-캐릭터 연결)은 항상 열람 가능 — 연결 기능은 3차 */}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

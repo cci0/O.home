@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useSectionParam, filterSection, sectionSetter, secQuery } from '@/lib/sectionStore';
 import { useLocalList, fmtDate } from '@/lib/postStore';
+import { TagFilter } from '@/components/ui/TagFilter';
+import { tagCounts, hasAllTags, tagMatches, useTagFilter } from '@/lib/tagUtil';
 import { BackupPost, BACKUP_SEED } from '@/lib/galleryStore';
 import { SearchBar, Pager } from '@/components/ui/Kit';
 import { createPortal } from 'react-dom';
@@ -36,6 +38,7 @@ function BackupPageInner() {
     if (menuLoaded && !viewInit) { setView(menuSet.backupView); setViewInit(true); }
   }, [menuLoaded, viewInit, menuSet.backupView]);
   const [q, setQ] = useState('');
+  const [tagSel, toggleTag, clearTags] = useTagFilter();   // 자유 태그 필터
   const [unveiled, setUnveiled] = useState<Record<string, boolean>>({});
   /* 우클릭 → 썸네일 수정 (v2.0 사용자 요청) — 리스트에서 바로 대표 이미지 크롭을 고친다.
      수정 화면까지 안 가도 되게. 관리자와 글쓴이만, 이미지가 있는 글만 */
@@ -56,6 +59,7 @@ function BackupPageInner() {
 
   const visible = posts
     .filter(p => isAdmin || p.visibility === 'public' || (p.visibility === 'member' && user))
+    .filter(p => hasAllTags(p, tagSel))
     .filter(p => !q || p.title.includes(q) || p.category.includes(q)
       || (p.tags ?? []).some(t => t.toLowerCase().includes(q.toLowerCase())));   // 태그 검색 (v2.0)
 
@@ -70,7 +74,7 @@ function BackupPageInner() {
   const cur = Math.min(page, pages);      // 검색·보기 전환으로 줄면 마지막 장으로 당긴다
   const start = (cur - 1) * PER;
   const paged = visible.slice(start, start + PER);
-  useEffect(() => { setPage(1); }, [q, view]);   // 검색어·보기를 바꾸면 첫 장부터
+  useEffect(() => { setPage(1); }, [q, view, tagSel]);   // 검색어·보기를 바꾸면 첫 장부터
 
   const count = (p: BackupPost) => Math.max(p.images.length, p.phList.length);
   const meta = (p: BackupPost) =>
@@ -95,6 +99,9 @@ function BackupPageInner() {
           )}
         </div>
       </div>
+
+      <TagFilter counts={tagCounts(posts.filter(p => isAdmin || p.visibility === 'public' || (p.visibility === 'member' && !!user)))}
+        selected={tagSel} onToggle={toggleTag} onClear={clearTags} />
 
       {/* 갤러리/리스트 모두 렌더해 두고 display로만 전환 (v1.9) —
           전환 때마다 재마운트되며 이미지가 다시 로드·등장하던 깜빡임 제거 */}

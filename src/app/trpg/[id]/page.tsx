@@ -16,6 +16,7 @@ import { KInput, KSelect, KDate, KTextarea } from '@/components/ui/Kit';
 import { ColorField } from '@/components/ui/ColorField';
 import { CropEditor, CropImg, CropValue } from '@/components/ui/CropEditor';
 import { useToast } from '@/components/ui/Toast';
+import { parseTags } from '@/lib/tagUtil';
 
 /** 로그 렌더 프레임 — 대형 문서도 안정적으로 로드되도록 srcdoc 대신 Blob URL 사용 */
 function LogFrame({ frameRef, html, title, onFrameLoad }: {
@@ -102,7 +103,7 @@ export default function TrpgDetailPage() {
   const [eOpen, setEOpen] = useState(false);
   const [e, setE] = useState({
     noText: '', title: '', catchphrase: '', writer: '', withText: '',
-    relId: 'none', date: '', visibility: 'public' as TrpgLog['visibility'], password: '',
+    relId: 'none', tags: '', date: '', visibility: 'public' as TrpgLog['visibility'], password: '',
     listHidden: false,   // 목록 표시 여부 (v2.0 — 접근권한과 별개)
   });
   // 본문 교체
@@ -153,6 +154,7 @@ export default function TrpgDetailPage() {
       title: e.title.trim(), catchphrase: e.catchphrase.trim() || undefined,
       writer: e.writer.trim(), withText: e.withText.trim(),
       relId: e.relId === 'none' ? undefined : e.relId,
+      tags: parseTags(e.tags),
       date: e.date || undefined,
       visibility: e.visibility, password: e.password.trim() || undefined,
       listHidden: e.listHidden,
@@ -328,7 +330,7 @@ html,body{margin:0!important;padding:0!important;height:auto!important;min-heigh
           {isAdmin && <button className="btn btn-dark" onClick={() => {
             setE({
               noText: l.noText ?? '', title: l.title, catchphrase: l.catchphrase ?? '', writer: l.writer,
-              withText: l.withText, relId: l.relId ?? 'none', date: l.date ?? '',
+              withText: l.withText, relId: l.relId ?? 'none', tags: (l.tags ?? []).join(', '), date: l.date ?? '',
               visibility: l.visibility, password: l.password ?? '', listHidden: !!l.listHidden,
             });
             // 본문·썸네일 교체 상태 초기화 (기본: 현재 것 유지)
@@ -433,6 +435,7 @@ html,body{margin:0!important;padding:0!important;height:auto!important;min-heigh
               options={[{ value: 'none', label: '자관 연동 없음' }, ...rels.map(r => ({ value: r.id, label: r.name }))]} />
             <KDate value={e.date} onChange={v => setE(s => ({ ...s, date: v }))} style={{ flex: 1 }} />
           </div>
+          <KInput placeholder="태그 (선택 — 쉼표로 구분)" value={e.tags} onChange={ev => setE(s => ({ ...s, tags: ev.target.value }))} />
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <KSelect minWidth={140} value={e.visibility} onChange={v => setE(s => ({ ...s, visibility: v as TrpgLog['visibility'] }))}
               options={[
