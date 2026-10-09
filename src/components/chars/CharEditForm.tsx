@@ -11,6 +11,7 @@ import { putBlob, getBlob, useBlobUrl } from '@/lib/blobStore';
 import { useFonts, deVarFamily } from '@/lib/fontStore';
 import { KInput, KSelect, KStep, KCheck } from '@/components/ui/Kit';
 import { parseTags } from '@/lib/tagUtil';
+import { TagInput } from '@/components/ui/TagInput';
 import { RichEditor } from '@/components/ui/RichEditor';
 import { ColorField } from '@/components/ui/ColorField';
 import { CropEditor, CropValue, CropImg } from '@/components/ui/CropEditor';
@@ -310,7 +311,7 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
             )}
             <KInput placeholder="한 줄 소개 (선택)" value={sub} onChange={e => setSub(e.target.value)} />
             {/* 자유 태그 — 캐릭터 소관이라 AU 편집에서는 숨김 */}
-            {!auMode && <KInput placeholder="태그 (선택 — 쉼표로 구분)" value={tagsText} onChange={e => setTagsText(e.target.value)} />}
+            {!auMode && <TagInput value={tagsText} onChange={setTagsText} />}
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <span className="cp-lb">대표 테마색</span>
               <ColorField value={color} onChange={setColor} />

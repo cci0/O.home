@@ -11,7 +11,7 @@ import { useSectionParam, filterSection, sectionSetter, secQuery } from '@/lib/s
 import { SearchBar, FitText } from '@/components/ui/Kit';
 import { TagFilter } from '@/components/ui/TagFilter';
 import { TagList } from '@/components/ui/TagList';
-import { tagCounts, hasAllTags, tagMatches, useTagFilter } from '@/lib/tagUtil';
+import { tagCounts, matchTags, tagMatches, useTagFilter } from '@/lib/tagUtil';
 import { CroppedBlobImg } from '@/components/ui/CropEditor';
 
 import { useToast } from '@/components/ui/Toast';
@@ -31,7 +31,7 @@ function CharsInner() {
   // 저장은 이 목록 자리만 교체 — 걸러진 목록을 그대로 넘겨도 다른 목록이 지워지지 않는다
   const setChars = sectionSetter(charsAll, sec.id, setCharsAll);
   const [q, setQ] = useState('');
-  const [tagSel, toggleTag, clearTags] = useTagFilter();   // 자유 태그 필터
+  const [tagSel, toggleTag, clearTags, tagMode, toggleMode] = useTagFilter();   // 자유 태그 필터
 
   /* 편집 권한 문서 자가 치유 (v2.0 포크 제보 — 「권한을 줬는데 그 회원의 저장이 거부된다」).
      업데이트 전에 준 권한은 문서에 규칙이 읽는 평평한 목록(editorIds)이 없어, 최신 규칙을
@@ -52,7 +52,7 @@ function CharsInner() {
   const visible = chars
     .filter(c => c.own)
     .filter(c => isAdmin || c.visibility === 'public')
-    .filter(c => hasAllTags(c, tagSel))
+    .filter(c => matchTags(c, tagSel, tagMode))
     .filter(c => !q || c.name.toLowerCase().includes(q.toLowerCase()) || c.sub.includes(q) || tagMatches(c, q));
 
   // 편집모드 카드 드래그 정렬 (v1.9)
@@ -69,7 +69,7 @@ function CharsInner() {
         </div>
       </div>
       <TagFilter counts={tagCounts(chars.filter(c => c.own && (isAdmin || c.visibility === 'public')))}
-        selected={tagSel} onToggle={toggleTag} onClear={clearTags} />
+        selected={tagSel} onToggle={toggleTag} onClear={clearTags} mode={tagMode} onToggleMode={toggleMode} />
       <div className="g5 chars-grid">
         {visible.map((c, i) => {
           const priv = c.visibility === 'private';
@@ -88,7 +88,7 @@ function CharsInner() {
                 <b style={{ minWidth: 0, flex: 1 }}><FitText>{c.name}</FitText></b>
                 <i style={{ background: c.color }} />
               </div>
-              <TagList tags={c.tags} max={3} style={{ padding: '0 14px 12px', marginTop: -4, fontSize: 11 }} />
+              <TagList tags={c.tags} max={3} onPick={toggleTag} style={{ padding: '0 14px 12px', marginTop: -4, fontSize: 11 }} />
             </div>
           );
         })}

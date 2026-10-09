@@ -907,7 +907,7 @@ export default function RelDetailPage() {
         <div className="catch" style={{ color: auSt.cpColor }}>
           {au?.catchphrase || rel.catchphrase}
         </div>
-        <TagList tags={rel.tags} style={{ justifyContent: 'center', marginTop: 8 }} />
+        <TagList tags={rel.tags} href="/rels" style={{ justifyContent: 'center', marginTop: 8 }} />
         {isDuo && pairSlots[1] && (
           <div className="quote r" style={{
             color: pairSlots[1].quoteColor,

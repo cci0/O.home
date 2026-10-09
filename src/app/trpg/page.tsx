@@ -16,7 +16,8 @@ import { ColorField } from '@/components/ui/ColorField';
 import { CropEditor, CroppedBlobImg, CropValue, CropImg } from '@/components/ui/CropEditor';
 import { useToast } from '@/components/ui/Toast';
 import { TagList } from '@/components/ui/TagList';
-import { parseTags, tagCounts, hasAllTags, tagMatches, useTagFilter } from '@/lib/tagUtil';
+import { TagInput } from '@/components/ui/TagInput';
+import { parseTags, tagCounts, matchTags, tagMatches, useTagFilter } from '@/lib/tagUtil';
 
 import { useSiteSettings } from '@/lib/siteStore';
 import { useMainStore } from '@/lib/mainStore';
@@ -41,7 +42,7 @@ function TrpgPageInner() {
   const [rels] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
   const { editOn } = useMainStore();          // 편집모드 — 상단바 토글 (다른 목록과 공통)
   const [filter, setFilter] = useState<string>('all');
-  const [tagFilter, toggleTag, clearTags] = useTagFilter();   // 고른 태그 — 모두 달린 로그만 (AND)
+  const [tagFilter, toggleTag, clearTags, tagMode, toggleMode] = useTagFilter();   // 고른 태그 — 모두 달린 로그만 (AND)
   const [skin, setSkin] = useState<'ticket' | 'basic'>('ticket');
   const [q, setQ] = useState('');
   // 모바일은 티켓 스킨 대신 항상 기본형 리스트 — 좁은 폭에서 티켓이 뭉개지지 않게 (v1.9 사용자 확정)
@@ -97,7 +98,7 @@ function TrpgPageInner() {
     // 편집모드에서는 관리자에게만 예외로 보여 되돌릴 수 있게 한다
     .filter(l => !l.listHidden || (isAdmin && editOn))
     .filter(l => filter === 'all' || (filter === 'none' ? !l.relId : l.relId === filter))
-    .filter(l => hasAllTags(l, tagFilter))
+    .filter(l => matchTags(l, tagFilter, tagMode))
     .filter(l => !q || l.title.includes(q) || l.writer.includes(q) || l.withText.includes(q) || tagMatches(l, q));
   // 정렬 기준은 저장된 순서 — 편집모드에서 드래그로 바꾼 순서가 그대로 목록에 반영된다 (v2.0).
   // 새 로그는 앞에 넣으므로 기본은 지금까지처럼 최신순이고, № 번호는 표시용으로만 남는다.
@@ -126,7 +127,7 @@ function TrpgPageInner() {
   const logCur = Math.min(logPage, logPages);        // 필터로 줄어 페이지가 사라지면 마지막으로 당긴다
   const logStart = (logCur - 1) * PER_LOG;
   // 필터·검색·보기 방식을 바꾸면 1페이지부터
-  useEffect(() => { setLogPage(1); }, [filter, tagFilter, q, ticketView]);
+  useEffect(() => { setLogPage(1); }, [filter, tagFilter, tagMode, q, ticketView]);
   const pageLogs = visible.slice(logStart, logStart + PER_LOG);
 
   /** 이 페이지 안에서 바뀐 순서를 전체 순서에 되꽂는다 —
@@ -267,7 +268,7 @@ function TrpgPageInner() {
         {l.writer && <div className="row"><b>라이터</b> {l.writer}</div>}
         {l.withText && <div className="row"><b>동행</b> {l.withText}</div>}
         {l.date && <div className="row"><b>날짜</b> {l.date.replace(/-/g, '.')}</div>}
-        {(l.tags ?? []).length > 0 && <div className="row"><b>태그</b> {(l.tags ?? []).map(t => `#${t}`).join(' ')}</div>}
+        {(l.tags ?? []).length > 0 && <div className="row"><b>태그</b> {(l.tags ?? []).map(t => <span key={t} style={{ marginRight: 6, cursor: 'var(--cur-pointer,pointer)' }} onClick={e => { e.stopPropagation(); toggleTag(t); }}>#{t}</span>)}</div>}
         <div className="adm"><span>{site.subtitle}</span><span>{logNo(l)}</span></div>
       </div>
     </div>
@@ -314,7 +315,7 @@ function TrpgPageInner() {
                       {/* 나만보기 등도 목록엔 뜨므로(v2.0) — 못 여는 로그는 왜 못 여는지 표시 */}
                       {!canOpen(l) && <span className="pill" style={{ marginLeft: 6 }}>{l.password ? '비밀번호 필요' : '비공개'}</span>}
                       <small>{[l.writer, l.withText].filter(Boolean).join(' · ')}{l.date ? ` · ${l.date.replace(/-/g, '.')}` : ''}</small>
-                      <TagList tags={l.tags} max={5} style={{ marginTop: 3, fontSize: 11 }} />
+                      <TagList tags={l.tags} max={5} onPick={toggleTag} style={{ marginTop: 3, fontSize: 11 }} />
                     </div>
                   </div>
                 ))}
@@ -362,6 +363,9 @@ function TrpgPageInner() {
               {tagFilter.length > 0 && (
                 <div className="tag" onClick={clearTags}>선택 해제 ✕</div>
               )}
+              {tagFilter.length > 1 && (
+                <div className="tag" onClick={toggleMode}>{tagMode === 'or' ? '하나라도 포함' : '모두 포함'} ⇄</div>
+              )}
               {tagList.map(([t, n]) => (
                 <div key={t} className={`tag ${tagFilter.includes(t) ? 'on' : ''}`} onClick={() => toggleTag(t)}>
                   #{t} <small>{n}</small>
@@ -405,7 +409,7 @@ function TrpgPageInner() {
               options={[{ value: 'none', label: '자관 연동 없음' }, ...rels.map(r => ({ value: r.id, label: r.name }))]} />
             <KDate value={nDate} onChange={setNDate} style={{ flex: 1 }} />
           </div>
-          <KInput placeholder="태그 (선택 — 쉼표로 구분)" value={nTags} onChange={e => setNTags(e.target.value)} />
+          <TagInput value={nTags} onChange={setNTags} />
           {/* 접근권한 + 열람 비밀번호 (선택) — 권한이 없어도 비밀번호를 아는 사람은 열람 가능.
               연동 자관의 상대방(회원-캐릭터 연결)은 항상 열람 가능 — 연결 기능은 3차 */}
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

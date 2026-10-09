@@ -18,6 +18,7 @@ import { CropEditor, CropImg, CropValue } from '@/components/ui/CropEditor';
 import { useToast } from '@/components/ui/Toast';
 import { parseTags } from '@/lib/tagUtil';
 import { TagList } from '@/components/ui/TagList';
+import { TagInput } from '@/components/ui/TagInput';
 
 /** 로그 렌더 프레임 — 대형 문서도 안정적으로 로드되도록 srcdoc 대신 Blob URL 사용 */
 function LogFrame({ frameRef, html, title, onFrameLoad }: {
@@ -326,7 +327,7 @@ html,body{margin:0!important;padding:0!important;height:auto!important;min-heigh
       <div className="page-head">
         <PageTitle href={tt.href}>{tt.title}</PageTitle>
         <p>{logNo(l)}{[l.writer, l.withText].filter(Boolean).map(x => ` · ${x}`).join('')}{l.date ? ` · ${l.date.replace(/-/g, '.')}` : ''}</p>
-        <TagList tags={l.tags} style={{ marginTop: 6 }} />
+        <TagList tags={l.tags} href={sectionHref('trpg', l.secId ?? MAIN_SEC)} style={{ marginTop: 6 }} />
         <div className="head-actions">
           {rel && <button className="btn btn-dark" onClick={() => router.push(`/rels/${rel.id}`)}>{rel.name} ›</button>}
           {isAdmin && <button className="btn btn-dark" onClick={() => {
@@ -437,7 +438,7 @@ html,body{margin:0!important;padding:0!important;height:auto!important;min-heigh
               options={[{ value: 'none', label: '자관 연동 없음' }, ...rels.map(r => ({ value: r.id, label: r.name }))]} />
             <KDate value={e.date} onChange={v => setE(s => ({ ...s, date: v }))} style={{ flex: 1 }} />
           </div>
-          <KInput placeholder="태그 (선택 — 쉼표로 구분)" value={e.tags} onChange={ev => setE(s => ({ ...s, tags: ev.target.value }))} />
+          <TagInput value={e.tags} onChange={v => setE(s => ({ ...s, tags: v }))} />
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <KSelect minWidth={140} value={e.visibility} onChange={v => setE(s => ({ ...s, visibility: v as TrpgLog['visibility'] }))}
               options={[

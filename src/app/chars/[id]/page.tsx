@@ -17,7 +17,7 @@ import { BlobImg, useBlobUrl } from '@/lib/blobStore';
 import { CroppedBlobImg, CropEditor, type CropValue } from '@/components/ui/CropEditor';
 
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
-import { useSectionTitle } from '@/lib/sectionStore';
+import { useSectionTitle, sectionHref, MAIN_SEC } from '@/lib/sectionStore';
 import { ConfirmModal } from '@/components/ui/Modal';
 
 function CharDetailInner() {
@@ -257,7 +257,7 @@ function CharDetailInner() {
             letterSpacing: '.2em', lineHeight: 1.1,
           }}>{eff.name}</div>
           <div className="sub" style={{ marginBottom: eff.tags?.length ? 6 : 14 }}>{eff.sub}</div>
-          <TagList tags={eff.tags} style={{ marginBottom: 14 }} />
+          <TagList tags={eff.tags} href={sectionHref('chars', eff.secId ?? MAIN_SEC)} style={{ marginBottom: 14 }} />
 
           {tab === 'basic' ? (
             <>

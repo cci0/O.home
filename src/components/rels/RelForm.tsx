@@ -16,6 +16,7 @@ import { DragList } from '@/components/ui/DragList';
 import { Lightbox } from '@/components/ui/Lightbox';
 import { useConfirmDelete } from '@/components/ui/Modal';
 import { parseTags } from '@/lib/tagUtil';
+import { TagInput } from '@/components/ui/TagInput';
 import { fileDrop } from '@/lib/dnd';
 import { useToast } from '@/components/ui/Toast';
 
@@ -670,7 +671,7 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
             )}
             <KInput placeholder="캐치프레이즈" value={catchphrase} onChange={e => setCatchphrase(e.target.value)} />
             {/* 자유 태그 — 자관 소관이라 AU 편집에서는 숨김 */}
-            {!auId && <KInput placeholder="태그 (선택 — 쉼표로 구분)" value={tagsText} onChange={e => setTagsText(e.target.value)} />}
+            {!auId && <TagInput value={tagsText} onChange={setTagsText} />}
             {/* 자관명·캐치프레이즈 글씨색 (v1.9 사용자 요청) — 기본은 테마색. AU마다 따로 정할 수 있다 (v2.0) */}
             {(
               <div>

@@ -1,6 +1,7 @@
 'use client';
 // 그림백업 작성/수정 공용 폼 (4.11) — 제목/유형/이미지 다중 업로드(원본·최적화·크롭·⠿순서)/설명/설정/접기
 // 수정 모드: 기존 이미지(ref)는 그대로 유지·재정렬·삭제 가능, 새 파일 추가 가능
+import { TagInput } from '@/components/ui/TagInput';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -234,7 +235,7 @@ export function BackupForm({ initial }: { initial: BackupPost | null }) {
             {/* 태그 (v2.0 사용자 요청) — 목록·카드에 나열되고 검색에 걸린다 */}
             <div className="form-row">
               <label className="k-label" style={{ width: 70 }}>태그</label>
-              <KInput value={tagsText} onChange={e => setTagsText(e.target.value)} placeholder="쉼표로 구분" style={{ flex: 1 }} />
+              <TagInput value={tagsText} onChange={setTagsText} />
             </div>
             <div className="form-row">
               <label className="k-label" style={{ width: 70 }}>제작일 (선택)</label>
