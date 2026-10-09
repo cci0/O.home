@@ -327,7 +327,7 @@ html,body{margin:0!important;padding:0!important;height:auto!important;min-heigh
       <div className="page-head">
         <PageTitle href={tt.href}>{tt.title}</PageTitle>
         <p>{logNo(l)}{[l.writer, l.withText].filter(Boolean).map(x => ` · ${x}`).join('')}{l.date ? ` · ${l.date.replace(/-/g, '.')}` : ''}</p>
-        <TagList tags={l.tags} href={sectionHref('trpg', l.secId ?? MAIN_SEC)} style={{ marginTop: 6 }} />
+        <TagList tags={l.tags} href={sectionHref('trpg', l.secId ?? MAIN_SEC)} style={{ marginTop: 6, gridColumn: 1 }} />
         <div className="head-actions">
           {rel && <button className="btn btn-dark" onClick={() => router.push(`/rels/${rel.id}`)}>{rel.name} ›</button>}
           {isAdmin && <button className="btn btn-dark" onClick={() => {
