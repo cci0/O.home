@@ -59,10 +59,11 @@ import { validateConfig, configFileText, saveLocalConfig, parseFirebaseSnippet, 
 import { migrateTo, findOrphanFiles } from '@/lib/transfer';
 import { FIRESTORE_RULES, STORAGE_RULES } from '@/lib/firebaseRules';
 import { SCHEMA_SQL } from '@/lib/schemaSql';
+import { TagPane } from '@/components/settings/TagPane';
 
 const CATEGORIES = [
   '디자인', '메인 페이지', '위젯', '메뉴 관리', '게시판 관리', '자관 질문', '커미션', 'TRPG', '감상타래', '메모장',
-  '폰트', '마우스 커서', 'BGM', '무드 리스트', '회원/보안', '데이터 백업',
+  '폰트', '마우스 커서', 'BGM', '무드 리스트', '태그 관리', '회원/보안', '데이터 백업',
 ] as const;
 
 /** 색 항목 한 쌍 렌더 헬퍼 */
@@ -3344,6 +3345,8 @@ function SettingsInner() {
             <FontPane />
           ) : tab === '마우스 커서' ? (
             <CursorPane />
+          ) : tab === '태그 관리' ? (
+            <TagPane />
           ) : tab === '회원/보안' ? (
             <MemberPane />
           ) : tab === '데이터 백업' ? (
