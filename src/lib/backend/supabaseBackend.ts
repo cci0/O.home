@@ -203,7 +203,8 @@ export async function createSupabaseBackend(
     },
 
     subscribe(coll, onChange) {
-      const ch = sb.channel(`ohome:${coll}`)
+      // 같은 목록을 한 화면에서 두 번 구독해도 안 깨지게 구독마다 이름을 달리한다 (포크 수정)
+      const ch = sb.channel(`ohome:${coll}:${Math.random().toString(36).slice(2, 8)}`)
         .on('postgres_changes', { event: '*', schema: 'public', table: coll }, () => onChange())
         .subscribe();
       return () => { void sb.removeChannel(ch); };
