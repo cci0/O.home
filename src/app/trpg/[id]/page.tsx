@@ -19,6 +19,9 @@ import { useToast } from '@/components/ui/Toast';
 import { parseTags } from '@/lib/tagUtil';
 import { TagList } from '@/components/ui/TagList';
 import { LogNav } from '@/components/trpg/LogNav';
+import { syncList } from '@/lib/db';
+import { isServerMode } from '@/lib/backend';
+import { currentUserId } from '@/lib/currentUser';
 import { TagInput } from '@/components/ui/TagInput';
 
 /** 로그 렌더 프레임 — 대형 문서도 안정적으로 로드되도록 srcdoc 대신 Blob URL 사용 */
@@ -574,10 +577,22 @@ html,body{margin:0!important;padding:0!important;height:auto!important;min-heigh
       <ConfirmModal open={delAsk} title="로그를 삭제하시겠습니까?" body="삭제한 로그는 복구할 수 없습니다."
         onClose={() => setDelAsk(false)}
         buttons={[
-          { label: 'DELETE', kind: 'accent', onClick: () => {
+          { label: 'DELETE', kind: 'accent', onClick: async () => {
             deletedRef.current = true;   // 목록에서 빠지는 순간 위 효과가 홈으로 보내지 않게
-            setLogs(logs.filter(x => x.id !== l.id));
-            setBodies(bodies.filter(x => x.id !== l.id));   // 분리 저장된 본문도 함께 삭제 (v2.0)
+            const nl = logs.filter(x => x.id !== l.id);
+            const nb = bodies.filter(x => x.id !== l.id);
+            setLogs(nl);
+            setBodies(nb);   // 분리 저장된 본문도 함께 삭제 (v2.0)
+            // 서버 삭제가 끝난 뒤에 목록으로 이동 — 안 그러면 목록이 지워지기 전 데이터를 먼저 불러와 남아 보인다
+            if (isServerMode()) {
+              try {
+                const uid = currentUserId();
+                await Promise.all([
+                  syncList('ohome.trpg.v1', logs as never[], nl as never[], uid),
+                  syncList('ohome.trpgbody.v1', bodies as never[], nb as never[], uid),
+                ]);
+              } catch { /* 실패해도 useLocalList가 재조회로 복구 */ }
+            }
             router.push(tt.href);
           } },
           { label: 'CANCEL', kind: 'ghost', onClick: () => setDelAsk(false) },
