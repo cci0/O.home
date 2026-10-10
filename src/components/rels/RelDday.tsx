@@ -42,8 +42,9 @@ export function RelDdayChips({ ddays, style }: { ddays?: RelDday[]; style?: Reac
         const i = ddayInfo(d.date, d.plusOne);
         return (
           <span key={d.id} data-tip={d.date}
-            style={{ display: 'inline-flex', gap: 8, alignItems: 'baseline', padding: '3px 12px', border: '1px solid currentColor',
-              borderRadius: 999, fontSize: 'calc(12px*var(--fs,1))', opacity: .92 }}>
+            style={{ display: 'inline-flex', gap: 8, alignItems: 'baseline', padding: '4px 13px', borderRadius: 999,
+              fontSize: 'calc(12px*var(--fs,1))', color: '#fff', background: 'rgba(20,22,26,.62)',
+              border: '1px solid rgba(255,255,255,.35)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
             <b style={{ fontFamily: 'var(--serif)', letterSpacing: '.04em', display: 'inline' }}>{i.label}</b>
             <span>{d.title.trim()}</span>
           </span>

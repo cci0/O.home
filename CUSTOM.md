@@ -164,3 +164,11 @@
 | `app/rels/[id]/edit/page.tsx` | 저장 값에 `ddays` 전달 (AU 편집 제외) |
 | `app/rels/[id]/page.tsx` | import 1줄 + 이름 아래 `<RelDdayChips/>` 1줄 |
 | `components/main/widgets.tsx` | import 1줄, `DdayWidget`의 `items`에 자관 D-day를 이어 붙임, 행 `key` 변경 |
+
+## 9. 위젯 스크롤 · RECENT 5개 · D-day 칩 색
+
+| 파일 | 바꾼 내용 |
+|---|---|
+| `app/globals.css` | `.wgt.sized > .widget`에 `overflow-y:auto` 두 줄 추가 — 크기를 줄인 위젯이 잘리지 않고 안에서 스크롤 (원작에는 없음, 충돌 시 이 줄만 다시 얹기) |
+| `components/main/RecentWidget.tsx` | 보이는 개수 6 → 5 (새 파일) |
+| `components/rels/RelDday.tsx` | 자관 D-day 칩을 어두운 반투명 배경 + 흰 글씨로 (밝은 배경에서도 보이게) (새 파일) |

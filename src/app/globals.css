@@ -904,6 +904,8 @@ body.edit-on .main-grid{grid-template-columns:230px 1fr 260px}
 /* 크기 지정(동결/리사이즈)된 프레임: 내부 블록이 프레임을 꽉 채움 — 핸들을 늘리면 위젯도 같이 늘어남 */
 .wgt.sized > *:first-child{width:100%;height:100%}
 .wgt.sized > .widget{margin-bottom:0}
+/* 크기를 줄인 위젯은 잘리지 않고 안에서 스크롤 (포크 수정) */
+.wgt.sized > .widget{overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--line,rgba(0,0,0,.18)) transparent}
 /* 편집모드 드래그 커서 (v1.9 사용자 발견) — 이동 커서를 따로 등록하지 않았으면 시스템 손 모양(grab)이
    튀어나와 "커서가 깨져 보이고 등록한 핸드가 무시되는" 문제가 있었다.
    등록한 이동 > 등록한 포인터(핸드) > 등록한 기본 > 시스템 grab 순으로 내려간다. */

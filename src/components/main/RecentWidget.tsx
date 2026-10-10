@@ -6,7 +6,7 @@ import React, { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSiteEntries, ENTRY_LABEL } from '@/lib/siteEntries';
 
-const SHOW = 6;
+const SHOW = 5;
 
 const fmt = (ms: number) => {
   const d = new Date(ms);
