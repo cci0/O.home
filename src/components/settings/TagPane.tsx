@@ -21,7 +21,7 @@ import { useTagColors, TAG_PALETTE } from '@/lib/tagColors';
 type Kind = 'chars' | 'rels' | 'trpg' | 'gallery' | 'playlog' | 'dotori' | 'board';
 const KINDS: Kind[] = ['chars', 'rels', 'trpg', 'gallery', 'playlog', 'dotori', 'board'];
 const KIND_LABEL: Record<Kind, string> = {
-  chars: '캐릭터', rels: '자관', trpg: 'TRPG 로그', gallery: '갤러리', playlog: '플레이기록', dotori: '도토리', board: '게시판',
+  chars: '캐릭터', rels: '자관', trpg: '로그', gallery: '갤러리', playlog: '플레이기록', dotori: '도토리', board: '게시판',
 };
 const KIND_SHORT: Record<Kind, string> = {
   chars: '캐릭터', rels: '자관', trpg: 'TRPG', gallery: '갤러리', playlog: '기록', dotori: '도토리', board: '게시판',
@@ -150,7 +150,7 @@ export function TagPane() {
       <div className="set-sec">
         <h3>태그 관리</h3>
         <div className="d">
-          캐릭터·자관·TRPG 로그·갤러리·플레이기록·도토리·게시판에 단 태그를 한곳에서 정리합니다. 오타로 갈라진 태그를 합치거나, 이름을 바꾸거나, 안 쓰는 태그를 지우거나, 태그마다 색을 줄 수 있어요.
+          캐릭터·자관·로그·갤러리·플레이기록·도토리·게시판에 단 태그를 한곳에서 정리합니다. 오타로 갈라진 태그를 합치거나, 이름을 바꾸거나, 안 쓰는 태그를 지우거나, 태그마다 색을 줄 수 있어요.
           항목 자체는 건드리지 않고 태그만 바뀝니다.
         </div>
         {!ready && <div className="d">불러오는 중…</div>}
