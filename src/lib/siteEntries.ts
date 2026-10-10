@@ -15,7 +15,7 @@ import { TRPG_SEED, BACKUP_SEED, PLAYLOG_SEED, DOTORI_SEED, type TrpgLog, type B
 export type EntryKind = 'chars' | 'rels' | 'trpg' | 'gallery' | 'playlog' | 'dotori';
 export const ENTRY_KINDS: EntryKind[] = ['chars', 'rels', 'trpg', 'gallery', 'playlog', 'dotori'];
 export const ENTRY_LABEL: Record<EntryKind, string> = {
-  chars: '캐릭터', rels: '자관', trpg: 'TRPG 로그', gallery: '갤러리', playlog: '플레이기록', dotori: '도토리',
+  chars: '캐릭터', rels: '자관', trpg: '로그', gallery: '갤러리', playlog: '플레이기록', dotori: '도토리',
 };
 
 export interface SiteEntry {
