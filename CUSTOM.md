@@ -138,3 +138,29 @@
 
 **메뉴**: 환경설정 → 메뉴 관리에서 「세계관」을 원하는 곳에 추가해야 상단 메뉴에 보입니다.
 **자관**: 세계관 필드가 따로 없고, 세계관 상세에서 소속 캐릭터가 멤버인 자관을 자동으로 모아 보여 줍니다.
+
+## 6. 구독 중복 오류 수정 (갤러리 수정 화면)
+
+| 파일 | 바꾼 내용 |
+|---|---|
+| `lib/backend/supabaseBackend.ts` | `subscribe()`의 채널 이름에 무작위 꼬리표 추가 (한 줄). 수정 화면처럼 한 화면이 같은 목록을 두 번 읽어도 「구독 후 콜백 추가 불가」 오류가 나지 않음 |
+
+## 7. 세계관 JSON 가져오기
+
+`/worlds` 목록의 관리자용 **IMPORT** 버튼 — 세계관 문서를 JSON 파일(`worlds-import.json`)로 한꺼번에 등록합니다. 새 파일(`app/worlds/page.tsx`) 안의 기능이라 원작과 충돌하지 않습니다. 가져온 세계관은 기본 **나만보기**로 들어오니, 확인 후 각 수정 화면에서 공개범위를 바꾸세요.
+
+## 8. 자관 D-day
+
+자관마다 D-day를 여러 개 걸 수 있고(제목·날짜·+1 Day·「메인 위젯에도 표시」), 자관 상세 이름 아래에 칩으로 보입니다. 위젯 표시를 켠 것은 메인 D-DAY 위젯에 「자관명 · 제목」으로 같이 뜹니다. DB 변경 없음 (자관 데이터 안에 `ddays`로 저장).
+
+**새 파일**: `lib/relDday.ts`, `components/rels/RelDday.tsx`
+
+**기존 파일 수정**
+| 파일 | 바꾼 내용 |
+|---|---|
+| `lib/charStore.ts` | `RelDday` 타입 + `Relation`에 `ddays?` |
+| `components/rels/RelForm.tsx` | import 2줄, `ddays` 상태·저장값, D-DAY 편집칸 (AU 편집에서는 숨김) |
+| `app/rels/new/page.tsx` | 저장 값에 `ddays` 전달 |
+| `app/rels/[id]/edit/page.tsx` | 저장 값에 `ddays` 전달 (AU 편집 제외) |
+| `app/rels/[id]/page.tsx` | import 1줄 + 이름 아래 `<RelDdayChips/>` 1줄 |
+| `components/main/widgets.tsx` | import 1줄, `DdayWidget`의 `items`에 자관 D-day를 이어 붙임, 행 `key` 변경 |

@@ -1,6 +1,7 @@
 'use client';
 // 메인 위젯 렌더러 (4.0) — DIARY/LATEST/UPCOMING 등은 해당 기능(2·3차) 전까지 데모 데이터
 import { RecentWidget } from '@/components/main/RecentWidget';
+import { useRelWidgetDdays } from '@/lib/relDday';
 import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { WidgetConf, useMainStore, WIDGET_META, decoSlides } from '@/lib/mainStore';
@@ -258,7 +259,8 @@ export function DdayWidget({ conf }: { conf: WidgetConf }) {
   const { editOn } = useMainStore();
   const { familyOf } = useFonts();
   const [open, setOpen] = useState(false);
-  const items = (conf.settings.items as DdayItem[]) ?? [];
+  // 직접 만든 D-day 뒤에 자관에서 「메인 위젯에도 표시」를 켠 D-day가 이어서 뜬다 (관리 모달에는 직접 만든 것만)
+  const items: DdayItem[] = [...((conf.settings.items as DdayItem[]) ?? []), ...useRelWidgetDdays()];
   // 날짜 표시(D-2·D+3 등) 폰트·색 — 미지정이면 기존 세리프 기본값 그대로 (v2.0 사용자 요청)
   // 'serif'는 폰트 라이브러리의 실제(잠금) 폰트라 편집기의 기본 옵션과 값이 늘 일치한다
   const dFontId = (conf.settings.fontId as string | undefined) ?? 'serif';
@@ -271,7 +273,7 @@ export function DdayWidget({ conf }: { conf: WidgetConf }) {
       {items.map(it => {
         const d = ddayLabel(it.date, it.plusOne);
         return (
-          <div className="dday-row" key={it.title}>
+          <div className="dday-row" key={`${it.title}-${it.date}`}>
             <span>{it.title}</span>
             <b className={d.near && !dColor ? 'd-red' : ''}
               style={{ fontFamily: familyOf(dFontId), color: dColor }}>{d.label}</b>

@@ -352,6 +352,9 @@ export interface RelAu {
   hideLog?: boolean;
 }
 
+/** 자관 D-day — 자관마다 여러 개. widget이 켜진 것은 메인 D-DAY 위젯에도 뜬다 */
+export interface RelDday { id: string; title: string; date: string; plusOne?: boolean; widget?: boolean }
+
 export interface Relation {
   id: string;
   /** 페이지 주소 별명 (v2.0 사용자 요청) — /rels/{별명}. 나중에 수정 화면에서 바꿀 수 있다.
@@ -359,6 +362,7 @@ export interface Relation {
   slug?: string;
   name: string;
   tags?: string[];               // 자유 태그 — 목록 필터·검색용 (옛 데이터는 없음)
+  ddays?: RelDday[];             // 자관 D-day (옛 데이터는 없음)
   catchphrase: string;
   kind?: 'pair' | 'multi';         // 페어(2인) / 다인(3인+) — 등록 시 선택
   fontId?: string;               // 자관 이름 폰트 (4.5 필수 요구 — 5.1 라이브러리)

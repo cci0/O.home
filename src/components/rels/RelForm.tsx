@@ -3,6 +3,8 @@
 // 아트 다중 등록(첫 장 = 대표 · 리스트 썸네일 4:3 크롭) · 등록 시 내 캐릭터 연동
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { RelDdayEditor } from '@/components/rels/RelDday';
+import type { RelDday } from '@/lib/charStore';
 import { Character, Relation, Visibility, RelCpTag, RelMember, auMember, auStyle, fullShadow } from '@/lib/charStore';
 import { ColorField } from '@/components/ui/ColorField';
 import { isValidSlug, slugify } from '@/lib/link';
@@ -24,6 +26,7 @@ export interface RelFormValue {
   slug?: string;             // 페이지 주소 /rels/{slug} (v1.9 — 신규 등록 시, 비우면 자동 id)
   name: string;
   tags?: string[];           // 자유 태그 — 목록 필터·검색용
+  ddays?: RelDday[];         // 자관 D-day
   catchphrase: string;
   kind: 'pair' | 'multi';
   visibility: Visibility;
@@ -178,6 +181,7 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
   // 페이지 주소 /rels/{slug} — 신규는 비우면 자동(id). 수정에서도 바꿀 수 있다 (v2.0 사용자 요청)
   const [slug, setSlug] = useState(initial?.slug ?? '');
   const [tagsText, setTagsText] = useState((initial?.tags ?? []).join(', '));   // 자유 태그
+  const [ddays, setDdays] = useState<RelDday[]>(initial?.ddays ?? []);           // 자관 D-day
   const [catchphrase, setCatchphrase] = useState(auObj ? auObj.catchphrase : (initial?.catchphrase ?? ''));
   const [visibility, setVisibility] = useState<Visibility>(initial?.visibility ?? 'public');
   const [cp, setCp] = useState<RelCpTag>(initial?.cp ?? 'cp');   // CP/NCP (v1.9)
@@ -317,6 +321,7 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
       slug: slug.trim() || undefined,
       name: name.trim().toUpperCase(),
       tags: parseTags(tagsText),
+      ddays: ddays.filter(d => d.title.trim() && d.date),
       catchphrase: catchphrase.trim(),
       kind, visibility, fontId, bodyFontId,
       arts: artIds,
@@ -672,6 +677,8 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
             <KInput placeholder="캐치프레이즈" value={catchphrase} onChange={e => setCatchphrase(e.target.value)} />
             {/* 자유 태그 — 자관 소관이라 AU 편집에서는 숨김 */}
             {!auId && <TagInput value={tagsText} onChange={setTagsText} />}
+            {/* 자관 D-day — 자관 공통이라 AU 편집에서는 숨김 */}
+            {!auId && <RelDdayEditor value={ddays} onChange={setDdays} />}
             {/* 자관명·캐치프레이즈 글씨색 (v1.9 사용자 요청) — 기본은 테마색. AU마다 따로 정할 수 있다 (v2.0) */}
             {(
               <div>

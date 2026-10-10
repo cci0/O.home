@@ -3,6 +3,7 @@
 // 하단: TIMELINE / QUESTIONS 탭 (v1.8) + 역극·로그 연동 리스트 · 다인(3인+): 멤버 리스트형
 // 관리자: 멤버 추가(내/상대 캐릭터) · 타임라인 항목 추가 · 질문 추가
 import { TagList } from '@/components/ui/TagList';
+import { RelDdayChips } from '@/components/rels/RelDday';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
@@ -908,6 +909,7 @@ export default function RelDetailPage() {
           {au?.catchphrase || rel.catchphrase}
         </div>
         <TagList tags={rel.tags} href="/rels" style={{ justifyContent: 'center', marginTop: 8 }} />
+        <RelDdayChips ddays={rel.ddays} style={{ marginTop: 10 }} />
         {isDuo && pairSlots[1] && (
           <div className="quote r" style={{
             color: pairSlots[1].quoteColor,

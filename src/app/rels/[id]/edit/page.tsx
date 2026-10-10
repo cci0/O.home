@@ -50,7 +50,7 @@ function RelEditInner() {
             ...r,
             name: v.name, kind: v.kind, visibility: v.visibility,
             // 폰트는 AU 편집이면 그 AU에만 (v2.0 사용자 제보 — 여태 원본에 저장돼 전체가 같이 바뀌었다)
-            ...(auObj ? {} : { tags: v.tags }),   // 자유 태그 — 원본 편집에서만
+            ...(auObj ? {} : { tags: v.tags, ddays: v.ddays }),   // 자유 태그 — 원본 편집에서만
             ...(auObj ? {} : { fontId: v.fontId, bodyFontId: v.bodyFontId }),
             // 헤더는 AU 편집이면 그 AU에만 저장 — base 헤더는 유지 (v1.9 AU별 헤더 분리)
             ...(auObj ? {} : { headerImgId: v.headerImgId, headerCrop: v.headerCrop, slug: v.slug }),
