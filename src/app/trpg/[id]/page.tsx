@@ -19,7 +19,7 @@ import { useToast } from '@/components/ui/Toast';
 import { parseTags } from '@/lib/tagUtil';
 import { TagList } from '@/components/ui/TagList';
 import { LogNav } from '@/components/trpg/LogNav';
-import { syncList } from '@/lib/db';
+import { syncList, TABLE_OF } from '@/lib/db';
 import { isServerMode } from '@/lib/backend';
 import { currentUserId } from '@/lib/currentUser';
 import { TagInput } from '@/components/ui/TagInput';
@@ -578,20 +578,31 @@ html,body{margin:0!important;padding:0!important;height:auto!important;min-heigh
         onClose={() => setDelAsk(false)}
         buttons={[
           { label: 'DELETE', kind: 'accent', onClick: async () => {
+            if (deletedRef.current) return;   // 서버 삭제를 기다리는 동안 두 번 눌러도 한 번만
             deletedRef.current = true;   // 목록에서 빠지는 순간 위 효과가 홈으로 보내지 않게
             const nl = logs.filter(x => x.id !== l.id);
-            const nb = bodies.filter(x => x.id !== l.id);
-            setLogs(nl);
-            setBodies(nb);   // 분리 저장된 본문도 함께 삭제 (v2.0)
-            // 서버 삭제가 끝난 뒤에 목록으로 이동 — 안 그러면 목록이 지워지기 전 데이터를 먼저 불러와 남아 보인다
+            const nb = bodies.filter(x => x.id !== l.id);   // 분리 저장된 본문도 함께 삭제 (v2.0)
+            // 서버 모드: 서버 삭제가 **끝난 뒤에** 목록으로 이동 (포크 수정).
+            // 먼저 이동하면 목록이 지워지기 전 데이터를 불러와 지운 로그가 남아 보인다.
+            // syncList에는 저장 키가 아니라 테이블 이름(TABLE_OF)을 넘겨야 한다 — 예전엔 키를 넘겨
+            // 요청이 바로 실패했고, 그 실패를 삼켜서 기다리지 않고 이동하던 게 원인이었다.
+            // setLogs도 같은 삭제를 따로 보내므로 서버 모드에선 부르지 않는다 (같은 삭제를 두 번 보내지 않게).
             if (isServerMode()) {
               try {
                 const uid = currentUserId();
                 await Promise.all([
-                  syncList('ohome.trpg.v1', logs as never[], nl as never[], uid),
-                  syncList('ohome.trpgbody.v1', bodies as never[], nb as never[], uid),
+                  syncList(TABLE_OF['ohome.trpg.v1'], logs as never[], nl as never[], uid),
+                  syncList(TABLE_OF['ohome.trpgbody.v1'], bodies as never[], nb as never[], uid),
                 ]);
-              } catch { /* 실패해도 useLocalList가 재조회로 복구 */ }
+              } catch (err) {
+                deletedRef.current = false;
+                setDelAsk(false);
+                toast(`삭제하지 못했습니다 — ${err instanceof Error ? err.message : String(err)}`);
+                return;
+              }
+            } else {
+              setLogs(nl);
+              setBodies(nb);
             }
             router.push(tt.href);
           } },
