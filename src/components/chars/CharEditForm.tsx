@@ -21,6 +21,7 @@ import { SymbolInput } from '@/components/ui/SymbolInput';
 import { fileDrop } from '@/lib/dnd';
 import { isValidSlug, slugify } from '@/lib/link';
 import { useToast } from '@/components/ui/Toast';
+import { useWorldList } from '@/lib/worldStore';
 import { Lightbox } from '@/components/ui/Lightbox';
 
 interface SpecRow { id: string; label: string; value: string }
@@ -51,6 +52,8 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
   // id는 그대로 두고 별명(slug)만 저장하므로 참조가 끊어지지 않고 옛 주소도 계속 열린다
   const [slug, setSlug] = useState(initial?.slug ?? '');
   const [sub, setSub] = useState(initial?.sub ?? '');
+  const worldsSrc = useWorldList();   // 소속 세계관 선택지
+  const [worldId, setWorldId] = useState(initial?.worldId ?? '');
   const [tagsText, setTagsText] = useState((initial?.tags ?? []).join(', '));   // 자유 태그
   const [color, setColor] = useState(initial?.color ?? '#5d636d');
   const [themeMode, setThemeMode] = useState<'default' | 'custom'>(initial?.themeMode ?? 'default');
@@ -103,6 +106,7 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
       name: name.trim(),
       sub: sub.trim(),
       tags: parseTags(tagsText),
+      worldId: auMode ? initial?.worldId : (worldId || undefined),
       color,
       themeMode,
       colors: colors.filter(x => x.hex).map(({ hex, label }) => ({ hex, label })),
@@ -312,6 +316,11 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
             <KInput placeholder="한 줄 소개 (선택)" value={sub} onChange={e => setSub(e.target.value)} />
             {/* 자유 태그 — 캐릭터 소관이라 AU 편집에서는 숨김 */}
             {!auMode && <TagInput value={tagsText} onChange={setTagsText} />}
+            {/* 소속 세계관 — 하나만 고른다 (세계관 페이지의 소속 캐릭터 목록에 쓰임) */}
+            {!auMode && (
+              <KSelect value={worldId} onChange={setWorldId} placeholder="소속 세계관 (선택)"
+                options={[{ value: '', label: '소속 세계관 없음' }, ...worldsSrc.list.map(w => ({ value: w.id, label: w.name }))]} />
+            )}
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <span className="cp-lb">대표 테마색</span>
               <ColorField value={color} onChange={setColor} />

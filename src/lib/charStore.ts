@@ -58,6 +58,7 @@ export interface Character {
   bodyFontId?: string;   // 본문 폰트 — 프로필 정보·소개 텍스트
   own: boolean;          // true = 운영자 자캐 (리스트 노출), false = 상대 캐릭터
   tags?: string[];       // 자유 태그 — 목록 필터·검색용. 없으면 태그 없음 (옛 데이터 호환)
+  worldId?: string;      // 소속 세계관 (하나만) — 없으면 미지정
   // 회원-캐릭터 연결 (3차, v1.9) — 상대 캐릭터에 회원 권한 부여:
   // play = 역극에서 이 캐릭터로 발화 가능, edit = 캐릭터 편집까지 가능 (play 포함)
   grants?: CharGrant[];

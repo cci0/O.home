@@ -5,6 +5,7 @@
 // 편집은 EDIT → /chars/[id]/edit?au= 전용 페이지에서 새 프로필처럼 작성 (v1.9 사용자 확정)
 import { CharLogs } from '@/components/chars/CharLogs';
 import { TagList } from '@/components/ui/TagList';
+import { CharWorld } from '@/components/worlds/CharWorld';
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -258,6 +259,7 @@ function CharDetailInner() {
             letterSpacing: '.2em', lineHeight: 1.1,
           }}>{eff.name}</div>
           <div className="sub" style={{ marginBottom: eff.tags?.length ? 6 : 14 }}>{eff.sub}</div>
+          <CharWorld worldId={eff.worldId} style={{ marginBottom: 8 }} />
           <TagList tags={eff.tags} href={sectionHref('chars', eff.secId ?? MAIN_SEC)} style={{ marginBottom: 14 }} />
 
           {tab === 'basic' ? (
