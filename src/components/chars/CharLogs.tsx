@@ -38,17 +38,20 @@ export function CharLogs({ charId }: { charId: string }) {
   }, [rels.list, logs.list, charId, isAdmin, user, menuSet]);
 
   if (!rels.loaded || !logs.loaded || rows.length === 0) return null;
+  // 글자는 위의 스펙 목록(.spec)과 같은 크기·색을 쓴다 — 환경설정의 글자 크기 배율(--fs)도 따라간다
+  const fs = (px: number) => `calc(${px}px*var(--fs,1))`;
   return (
-    <div style={{ marginTop: 26 }}>
-      <h4 style={{ margin: '0 0 8px', fontSize: 12, letterSpacing: '.08em' }}>
-        출현 로그 <small style={{ color: 'var(--faint)' }}>{rows.length}</small>
-      </h4>
+    <div style={{ marginTop: 22, fontFamily: 'inherit', fontWeight: 400 }}>
+      <div style={{ fontSize: fs(11), color: 'var(--faint)', letterSpacing: '.1em', marginBottom: 6 }}>
+        출현 로그 · {rows.length}
+      </div>
       {rows.map(({ log, rel }) => (
-        <div key={log.id} style={{ padding: '8px 0', borderTop: '1px solid var(--line)', display: 'flex', gap: 10, alignItems: 'baseline' }}>
-          <Link href={`/trpg/${log.id}`} style={{ fontWeight: 600, minWidth: 0, flex: 1 }}>{log.title}</Link>
-          <small style={{ color: 'var(--faint)', whiteSpace: 'nowrap' }}>
+        <div key={log.id} style={{ padding: '7px 0', borderTop: '1px solid var(--line)', display: 'flex', gap: 10, alignItems: 'baseline' }}>
+          <Link href={`/trpg/${log.id}`}
+            style={{ fontSize: fs(12.5), fontWeight: 400, color: 'var(--ink)', minWidth: 0, flex: 1, lineHeight: 1.5 }}>{log.title}</Link>
+          <span style={{ fontSize: fs(11), color: 'var(--faint)', whiteSpace: 'nowrap' }}>
             {rel}{log.date ? ` · ${log.date.replace(/-/g, '.')}` : ''}
-          </small>
+          </span>
         </div>
       ))}
     </div>
