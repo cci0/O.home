@@ -72,9 +72,9 @@ export function TagPane() {
       .filter(r => !k || r.tag.toLowerCase().includes(k));
     return tSort === 'name' ? [...out].sort((a, b) => a.tag.localeCompare(b.tag, 'ko')) : out;
   }, [rows, tq, tSort, tKind]);
-  // 한 줄 안에서 펼치는 칸 — 색 고르기 또는 이름 바꾸기·삭제 버튼 (한 번에 하나만)
-  const [open, setOpen] = useState<{ tag: string; what: 'color' | 'more' } | null>(null);
-  const toggleOpen = (tag: string, what: 'color' | 'more') =>
+  // 줄 아래에 펼치는 색 고르기 칸 (한 번에 하나만 — 색 점을 다시 누르면 닫힘)
+  const [open, setOpen] = useState<{ tag: string; what: 'color' } | null>(null);
+  const toggleOpen = (tag: string, what: 'color') =>
     setOpen(o => (o && o.tag === tag && o.what === what ? null : { tag, what }));
 
   const all = async (fn: (tags: string[]) => string[]) => {
@@ -163,6 +163,14 @@ export function TagPane() {
   return (
     <div>
       {del.element}
+      {/* 이름 바꾸기 · 삭제 글자 버튼 — 테두리 없이, 올리면 진해짐 (삭제는 붉게) */}
+      <style>{`
+        .tp-act{border:0;background:transparent;padding:5px 6px;border-radius:5px;font-size:11px;line-height:1;
+          color:var(--faint);cursor:var(--cur-pointer,pointer);transition:.15s;white-space:nowrap}
+        .tp-act:hover{color:var(--ink);background:var(--line)}
+        .tp-act.del:hover{color:#a63a45}
+        .tp-act:disabled{opacity:.4;cursor:default}
+      `}</style>
       <div className="set-sec">
         <h3>태그 관리</h3>
         <div className="d">
@@ -222,16 +230,13 @@ export function TagPane() {
                   <small style={{ flex: 1, minWidth: 0, color: 'var(--faint)', fontSize: 10.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {KINDS.filter(k => c[k] > 0).map(k => `${KIND_SHORT[k]} ${c[k]}`).join(' · ')}
                   </small>
-                  <b style={{ fontSize: 12, color: 'var(--sub)', minWidth: 22, textAlign: 'right', flexShrink: 0 }} data-tip="전체 사용 수">{total}</b>
-                  {isOpen && open?.what === 'more' ? (
-                    <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                      <button className="btn btn-ghost" style={{ ...btn, height: 26, padding: '0 9px' }} disabled={busy} onClick={() => startEdit(tag)}>이름 바꾸기</button>
-                      <button className="btn btn-ghost" style={{ ...btn, height: 26, padding: '0 9px' }} disabled={busy} onClick={() => { setOpen(null); askDelete(tag); }}>삭제</button>
-                    </div>
-                  ) : (
-                    <button className="btn btn-ghost" style={{ ...btn, height: 26, width: 30, padding: 0, flexShrink: 0 }}
-                      aria-label={`#${tag} 이름 바꾸기·삭제`} data-tip="이름 바꾸기 · 삭제" onClick={() => toggleOpen(tag, 'more')}>⋯</button>
-                  )}
+                  <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--sub)', width: 28, textAlign: 'right', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }} data-tip="전체 사용 수">{total}</span>
+                  {/* 이름 바꾸기 · 삭제 — 항상 보이는 테두리 없는 글자 버튼 (열고 닫을 메뉴 없이) */}
+                  <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                    <button className="tp-act" disabled={busy} onClick={() => startEdit(tag)}>이름 바꾸기</button>
+                    <span style={{ color: 'var(--faint)', fontSize: 11, opacity: .5 }}>·</span>
+                    <button className="tp-act del" disabled={busy} onClick={() => { setOpen(null); askDelete(tag); }}>삭제</button>
+                  </div>
                 </div>
               )}
               {isOpen && open?.what === 'color' && editing !== tag && (
