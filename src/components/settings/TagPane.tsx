@@ -24,7 +24,7 @@ const KIND_LABEL: Record<Kind, string> = {
   chars: '캐릭터', rels: '자관', trpg: '로그', gallery: '갤러리', playlog: '플레이기록', dotori: '도토리', board: '게시판',
 };
 const KIND_SHORT: Record<Kind, string> = {
-  chars: '캐릭터', rels: '자관', trpg: 'TRPG', gallery: '갤러리', playlog: '기록', dotori: '도토리', board: '게시판',
+  chars: '캐릭터', rels: '자관', trpg: '로그', gallery: '갤러리', playlog: '기록', dotori: '도토리', board: '게시판',
 };
 
 export function TagPane() {
@@ -61,6 +61,22 @@ export function TagPane() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chars.list, rels.list, logs.list, posts.list, records.list, dotori.list, board.list]);
 
+  // 목록 보기 (포크 개선 — 태그가 많아져도 보기 편하게): 찾기 · 정렬 · 종류 거르기
+  const [tq, setTq] = useState('');
+  const [tSort, setTSort] = useState<'count' | 'name'>('count');
+  const [tKind, setTKind] = useState<Kind | 'all'>('all');
+  const shownRows = useMemo(() => {
+    const k = tq.trim().replace(/^#+/, '').toLowerCase();
+    const out = rows
+      .filter(r => tKind === 'all' || r.c[tKind] > 0)
+      .filter(r => !k || r.tag.toLowerCase().includes(k));
+    return tSort === 'name' ? [...out].sort((a, b) => a.tag.localeCompare(b.tag, 'ko')) : out;
+  }, [rows, tq, tSort, tKind]);
+  // 한 줄 안에서 펼치는 칸 — 색 고르기 또는 이름 바꾸기·삭제 버튼 (한 번에 하나만)
+  const [open, setOpen] = useState<{ tag: string; what: 'color' | 'more' } | null>(null);
+  const toggleOpen = (tag: string, what: 'color' | 'more') =>
+    setOpen(o => (o && o.tag === tag && o.what === what ? null : { tag, what }));
+
   const all = async (fn: (tags: string[]) => string[]) => {
     let n = 0;
     for (const k of KINDS) n += await runTags(lists[k], fn);
@@ -76,7 +92,7 @@ export function TagPane() {
 
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
-  const startEdit = (t: string) => { setEditing(t); setDraft(t); };
+  const startEdit = (t: string) => { setEditing(t); setDraft(t); setOpen(null); };
   const doRename = (oldTag: string, nu: string[]) => guard(async () => {
     const n = await all(tags => uniq(tags.flatMap(t => (t === oldTag ? nu : [t]))));
     if (nu.length === 1) moveColor(oldTag, nu[0]); else setColor(oldTag, null);   // 색도 따라간다
@@ -155,40 +171,78 @@ export function TagPane() {
         </div>
         {!ready && <div className="d">불러오는 중…</div>}
         {ready && rows.length === 0 && <div className="d">아직 단 태그가 없습니다.</div>}
-        {rows.map(({ tag, c, total }) => (
-          <div className="set-row" key={tag}>
-            <div className="l" style={{ minWidth: 0 }}>
-              {editing === tag ? (
-                <KInput value={draft} onChange={e => setDraft(e.target.value)} placeholder="새 이름 (쉼표로 여러 개로 나눌 수 있어요)"
-                  style={{ width: 280 }} />
-              ) : (
-                <>
-                  <b style={colors[tag] ? { color: colors[tag] } : undefined}>#{tag}</b>
-                  <small>
-                    {KINDS.filter(k => c[k] > 0).map(k => `${KIND_SHORT[k]} ${c[k]}`).join(' · ')} (총 {total})
-                  </small>
-                  <div style={{ display: 'flex', gap: 4, marginTop: 6, alignItems: 'center' }}>
-                    {TAG_PALETTE.map(p => swatch(p, colors[tag] === p, tag))}
-                    {colors[tag] && swatch(null, false, tag)}
-                  </div>
-                </>
-              )}
+        {ready && rows.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 6 }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <KInput value={tq} onChange={e => setTq(e.target.value)} placeholder="태그 찾기"
+                style={{ flex: '1 1 180px', minWidth: 0 }} />
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button className={`btn ${tSort === 'count' ? 'btn-dark' : 'btn-ghost'}`} style={btn} onClick={() => setTSort('count')}>많이 쓴 순</button>
+                <button className={`btn ${tSort === 'name' ? 'btn-dark' : 'btn-ghost'}`} style={btn} onClick={() => setTSort('name')}>이름순</button>
+              </div>
             </div>
-            <div style={{ display: 'flex', gap: 6 }}>
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+              {(['all', ...KINDS] as const).map(k => {
+                const n = k === 'all' ? rows.length : rows.filter(r => r.c[k] > 0).length;
+                if (k !== 'all' && n === 0) return null;   // 태그가 하나도 없는 종류는 숨김
+                return (
+                  <button key={k} className={`btn ${tKind === k ? 'btn-dark' : 'btn-ghost'}`} style={{ ...btn, height: 26, padding: '0 10px' }}
+                    onClick={() => setTKind(k)}>{k === 'all' ? '전체' : KIND_LABEL[k]} {n}</button>
+                );
+              })}
+            </div>
+            <small style={{ color: 'var(--faint)', fontSize: 11 }}>
+              {shownRows.length === rows.length ? `태그 ${rows.length}개` : `태그 ${rows.length}개 중 ${shownRows.length}개`}
+            </small>
+          </div>
+        )}
+        {ready && rows.length > 0 && shownRows.length === 0 && <div className="d" style={{ margin: '10px 0' }}>찾는 태그가 없습니다.</div>}
+        {shownRows.map(({ tag, c, total }) => {
+          const isOpen = open?.tag === tag;
+          return (
+            <div key={tag} style={{ borderBottom: '1px solid var(--line)', padding: '7px 0' }}>
               {editing === tag ? (
-                <>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <KInput value={draft} onChange={e => setDraft(e.target.value)} placeholder="새 이름 (쉼표로 여러 개로 나눌 수 있어요)"
+                    style={{ flex: '1 1 220px', minWidth: 0 }} />
                   <button className="btn btn-dark" style={btn} disabled={busy} onClick={() => applyRename(tag)}>적용</button>
                   <button className="btn btn-ghost" style={btn} onClick={() => setEditing(null)}>취소</button>
-                </>
+                </div>
               ) : (
-                <>
-                  <button className="btn btn-ghost" style={btn} disabled={busy} onClick={() => startEdit(tag)}>이름 바꾸기</button>
-                  <button className="btn btn-ghost" style={btn} disabled={busy} onClick={() => askDelete(tag)}>삭제</button>
-                </>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', minWidth: 0 }}>
+                  {/* 색 점 — 누르면 아래에 색 고르는 칸이 열린다 */}
+                  <button onClick={() => toggleOpen(tag, 'color')} data-tip="색 바꾸기" aria-label={`#${tag} 색 바꾸기`}
+                    style={{
+                      width: 14, height: 14, padding: 0, borderRadius: '50%', flexShrink: 0, cursor: 'var(--cur-pointer,pointer)',
+                      background: colors[tag] ?? 'transparent',
+                      border: colors[tag] ? '1px solid transparent' : '1px dashed var(--faint)',
+                      boxShadow: isOpen && open?.what === 'color' ? '0 0 0 2px var(--panel-solid), 0 0 0 3px var(--ink)' : undefined,
+                    }} />
+                  <b style={{ fontSize: 12.5, color: colors[tag] ?? 'var(--ink)', whiteSpace: 'nowrap', flexShrink: 0 }}>#{tag}</b>
+                  <small style={{ flex: 1, minWidth: 0, color: 'var(--faint)', fontSize: 10.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {KINDS.filter(k => c[k] > 0).map(k => `${KIND_SHORT[k]} ${c[k]}`).join(' · ')}
+                  </small>
+                  <b style={{ fontSize: 12, color: 'var(--sub)', minWidth: 22, textAlign: 'right', flexShrink: 0 }} data-tip="전체 사용 수">{total}</b>
+                  {isOpen && open?.what === 'more' ? (
+                    <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                      <button className="btn btn-ghost" style={{ ...btn, height: 26, padding: '0 9px' }} disabled={busy} onClick={() => startEdit(tag)}>이름 바꾸기</button>
+                      <button className="btn btn-ghost" style={{ ...btn, height: 26, padding: '0 9px' }} disabled={busy} onClick={() => { setOpen(null); askDelete(tag); }}>삭제</button>
+                    </div>
+                  ) : (
+                    <button className="btn btn-ghost" style={{ ...btn, height: 26, width: 30, padding: 0, flexShrink: 0 }}
+                      aria-label={`#${tag} 이름 바꾸기·삭제`} data-tip="이름 바꾸기 · 삭제" onClick={() => toggleOpen(tag, 'more')}>⋯</button>
+                  )}
+                </div>
+              )}
+              {isOpen && open?.what === 'color' && editing !== tag && (
+                <div style={{ display: 'flex', gap: 4, marginTop: 7, marginLeft: 24, alignItems: 'center' }}>
+                  {TAG_PALETTE.map(p => swatch(p, colors[tag] === p, tag))}
+                  {colors[tag] && swatch(null, false, tag)}
+                </div>
               )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="set-sec">
