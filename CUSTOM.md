@@ -3,8 +3,8 @@
 이 포크(`cci0/O.home`)는 원작(`w00j00working/O.home`)에 **태그·검색·RECENT 위젯 등**을 얹은 것입니다.
 원작을 [Sync fork]로 업데이트하다 충돌이 나면 이 문서를 보고 어디를 다시 얹을지 확인하세요.
 
-- 바뀐 파일: **40개** (새 파일 13 + 기존 파일 수정 27)
-- DB(SQL) 변경: **없음** — 새 필드(`tags`)는 항목 데이터(jsonb) 안에 같이 저장됩니다. 태그가 없는 예전 항목은 그대로 열립니다.
+- 바뀐 파일: **새 파일 21 + 기존 파일 수정 27 (세계관 추가로 기존 4개 더 수정)**
+- DB(SQL) 변경: 태그는 **없음**(항목 jsonb 안에 저장). **세계관은 `worlds` 테이블 추가 필요** → `supabase/worlds.sql` 실행 (아래 5번).
 - 태그 색은 설정 키 `ohome.tagcolors.v1`에 저장됩니다 (아래 ⚠️ 참고).
 
 ---
@@ -118,3 +118,29 @@
 - **TRPG 로그 본문**은 따로 저장돼서 전체 검색 대상이 아닙니다.
 - **출현 로그**는 로그가 자관에 연결돼 있어야 자관 멤버의 캐릭터 상세에 뜹니다.
 - 백업 알림은 로컬에만 기록돼서 뺐습니다. (원래 계획에 있었지만 적용하지 않음)
+
+## 5. 세계관 기능 (`/worlds`)
+
+**DB**: Supabase SQL Editor에 `supabase/worlds.sql` 전체를 붙여넣고 Run (여러 번 실행해도 안전). 원작 `schema.sql`은 건드리지 않았고, 원작 SQL을 다시 돌려도 `worlds`는 지워지지 않습니다.
+읽기는 공개범위(전체/멤버/나만)를 서버가 지키고, 등록은 관리자만 됩니다.
+
+**새 파일 (충돌 없음)**: `lib/worldStore.ts`, `components/worlds/WorldForm.tsx`, `components/worlds/CharWorld.tsx`, `app/worlds/page.tsx`, `app/worlds/new/page.tsx`, `app/worlds/[id]/page.tsx`, `app/worlds/[id]/edit/page.tsx`, `supabase/worlds.sql`
+
+**기존 파일 수정 (각 1~몇 줄)**
+| 파일 | 바꾼 내용 |
+|---|---|
+| `lib/backend/types.ts` | `COLLECTION_OF`에 `'ohome.worlds.v1': 'worlds'` 한 줄 (백업·이전에 자동 포함) |
+| `lib/visFloor.ts` | `AREA`에 `worlds: { href: '/worlds' }` 한 줄 |
+| `lib/menu.ts` | `FEATURES`에 `{ href: '/worlds', label: '세계관' }` 한 줄 |
+| `lib/charStore.ts` | `Character`에 `worldId?: string` |
+| `components/chars/CharEditForm.tsx` | import 1줄, `worldId` 상태, 저장 시 `worldId`, 「소속 세계관」 선택칸 |
+| `app/chars/[id]/page.tsx` | `CharWorld` import 1줄 + 이름 아래 `<CharWorld .../>` 1줄 |
+
+**메뉴**: 환경설정 → 메뉴 관리에서 「세계관」을 원하는 곳에 추가해야 상단 메뉴에 보입니다.
+**자관**: 세계관 필드가 따로 없고, 세계관 상세에서 소속 캐릭터가 멤버인 자관을 자동으로 모아 보여 줍니다.
+
+## 6. 구독 중복 오류 수정 (갤러리 수정 화면)
+
+| 파일 | 바꾼 내용 |
+|---|---|
+| `lib/backend/supabaseBackend.ts` | `subscribe()`의 채널 이름에 무작위 꼬리표 추가 (한 줄). 수정 화면처럼 한 화면이 같은 목록을 두 번 읽어도 「구독 후 콜백 추가 불가」 오류가 나지 않음 |
