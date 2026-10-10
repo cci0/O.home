@@ -178,6 +178,7 @@
 | 파일 | 바꾼 내용 |
 |---|---|
 | `lib/siteEntries.ts` | `ENTRY_LABEL`의 `trpg`를 `'TRPG 로그'` → `'로그'`로 (새 파일) |
+| `components/settings/TagPane.tsx` | 「태그 관리」 탭의 종류 버튼·안내 문구도 `'로그'`로 (새 파일) |
 
 ## 10. TRPG 로그 상세 — 삭제 후 이동 수정 · 이동 버튼
 
