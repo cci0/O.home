@@ -1,5 +1,6 @@
 'use client';
 // 그림백업 상세 (4.11) — 로그형: 세로 스크롤 뷰어 / 단일형: 큰 이미지 + 썸네일 스트립 + 좌우 넘김
+import { useTagColors, tagChip, tagInk } from '@/lib/tagColors';
 import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useHrefBlock } from '@/components/shell/MenuGuard';
@@ -17,6 +18,7 @@ import { useBoardSettings, boardBadgeStyle } from '@/lib/boardStore';
 export default function BackupDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const [tagColors] = useTagColors();
   const { user, isAdmin } = useAuth();
   const [posts, setPosts, loaded] = useLocalList<BackupPost>('ohome.backup.v1', BACKUP_SEED);
   const [cur, setCur] = useState(0);
@@ -71,7 +73,7 @@ export default function BackupDetailPage() {
         <p>
           {p.category} · {p.author} · {fmtDate(p.date)}{p.madeDate ? ` · 제작 ${p.madeDate}` : ''}
           {/* 태그 (v2.0 사용자 요청) — 목록과 같은 표기 */}
-          {(p.tags ?? []).map(t => <i key={t} className="tag-in" style={{ cursor: 'var(--cur-pointer,pointer)' }}
+          {(p.tags ?? []).map(t => <i key={t} className="tag-in" style={{ cursor: 'var(--cur-pointer,pointer)', ...tagInk(tagColors, t) }}
             onClick={() => { const h = sectionHref('gallery', p.secId ?? MAIN_SEC); router.push(`${h}${h.includes('?') ? '&' : '?'}tag=${encodeURIComponent(t)}`); }}>#{t}</i>)}
         </p>
         <div className="head-actions">

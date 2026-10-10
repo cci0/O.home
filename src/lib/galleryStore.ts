@@ -241,6 +241,7 @@ export interface PlayRecord {
   playtime: string;          // 4h 30m 등 자유 표기
   url?: string;              // Url (optional) — 클립 아이콘, 새 탭
   logId?: string;            // 내 홈 로그 백업 연결 (모바일: Playtime 밑줄)
+  tags?: string[];           // 자유 태그 — 목록 필터·검색용. 없으면 태그 없음 (옛 기록 호환)
 }
 
 export const PLAYLOG_SEED: PlayRecord[] = [];

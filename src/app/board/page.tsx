@@ -1,6 +1,9 @@
 'use client';
 // 일반 게시판 목록 (4.2 / 5.2 다중 게시판) — 말머리 필터 · 검색 · 비밀글 마스킹 · 접기 표시 · 페이지네이션
 // ?b=<게시판 id> 로 게시판 구분 (없으면 기본 게시판) · 리스트 스킨: 기본형 / 티켓형 (5.2 v1.9)
+import { TagFilter } from '@/components/ui/TagFilter';
+import { tagCounts, matchTags, useTagFilter } from '@/lib/tagUtil';
+import { useTagColors, tagChip, tagInk } from '@/lib/tagColors';
 import React, { Suspense, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -33,6 +36,8 @@ function BoardInner() {
   const { boards, loaded: boardsLoaded } = useBoards();
   const board = boards.find(b => b.id === bid) ?? boards[0];
   const [posts] = useLocalList<Post>('ohome.board.v1', BOARD_SEED);
+  const [tagSel, toggleTag, clearTags, tagMode, toggleMode] = useTagFilter();   // 자유 태그 필터
+  const [tagColors] = useTagColors();
   // 댓글 수 — 댓글은 글과 따로 저장된다 (v2.0). 옛 글 안에 남아 있던 것도 함께 센다
   const [cmtRows] = useLocalList<CommentRow>(COMMENT_KEY, COMMENT_SEED);
   const cmtCount = (p: Post) => commentsFor(cmtRows, 'post', p.id, p.comments).length;
@@ -52,6 +57,7 @@ function BoardInner() {
     let list = posts.filter(p => (p.boardId ?? MAIN_BOARD_ID) === board.id);
     if (cat === '공지') list = list.filter(p => p.notice);
     else if (cat !== '전체') list = list.filter(p => p.category === cat);
+    if (tagSel.length > 0) list = list.filter(p => matchTags(p, tagSel, tagMode));
     if (q) {
       const k = q.toLowerCase();
       list = list.filter(p =>
@@ -63,7 +69,7 @@ function BoardInner() {
     // 공지 상단 고정 + 최신순
     return list.sort((a, b) =>
       (b.notice ? 1 : 0) - (a.notice ? 1 : 0) || b.date.localeCompare(a.date));
-  }, [posts, board.id, cat, q]);
+  }, [posts, board.id, cat, q, tagSel, tagMode]);
 
   const totalPages = Math.max(1, Math.ceil(visible.length / PER_PAGE));
   const pageList = visible.slice((page - 1) * PER_PAGE, page * PER_PAGE);
@@ -98,6 +104,9 @@ function BoardInner() {
           )}
         </div>
       </div>
+
+      <TagFilter counts={tagCounts(posts.filter(p => (p.boardId ?? MAIN_BOARD_ID) === board.id && canRead(p)))}
+        selected={tagSel} onToggle={toggleTag} onClear={clearTags} mode={tagMode} onToggleMode={toggleMode} />
 
       {board.skin === 'ticket' ? (
         /* 티켓형 스킨 (5.2 v1.9) — 왼쪽 썸네일(본문 첫 이미지) + 절취선 + 오른쪽 글 정보 */
@@ -149,7 +158,8 @@ function BoardInner() {
                   <b style={{ color: 'var(--faint)' }}>🔒 비밀글입니다</b>
                 )}
                 {canRead(p) && (p.tags ?? []).length > 0 && (
-                  <span className="tags">{(p.tags ?? []).map(t => <i key={t}>#{t}</i>)}</span>
+                  <span className="tags">{(p.tags ?? []).map(t => <i key={t} style={{ cursor: 'var(--cur-pointer,pointer)', ...tagInk(tagColors, t) }}
+                    onClick={e => { e.stopPropagation(); toggleTag(t); }}>#{t}</i>)}</span>
                 )}
               </div>
               <span className="who">{p.author}</span>

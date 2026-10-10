@@ -1,6 +1,7 @@
 'use client';
 // 게시판 글쓰기/수정 (4.2 / 5.2 다중 게시판) — MD/HTML 모드 선택 + 실시간 미리보기 + 접기/비밀글/공지 설정
 // ?edit=<글 id> 로 진입하면 수정 모드 (작성자·관리자만)
+import { TagInput } from '@/components/ui/TagInput';
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -218,8 +219,7 @@ function WriteInner() {
             {/* 태그 (v2.0 사용자 요청) — 목록의 작성자 왼쪽에 나열되고 검색에 걸린다 */}
             <div className="form-row">
               <label className="k-label" style={{ width: 60 }}>태그</label>
-              <KInput value={tagsText} onChange={e => setTagsText(e.target.value)}
-                placeholder="쉼표로 구분" style={{ flex: 1 }} />
+              <TagInput value={tagsText} onChange={setTagsText} />
             </div>
             <div style={{ display: 'grid', gap: 9 }}>
               <KCheck label="비밀글 (관리자와 나만 열람)" checked={secret} onChange={setSecret} />

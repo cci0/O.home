@@ -1,5 +1,8 @@
 'use client';
 // TRPG 도토리 (4.15) — 시나리오 위시리스트 · 4열 카드 그리드 · 상태 필터 탭 · 카드에서 상태 전환
+import { TagFilter } from '@/components/ui/TagFilter';
+import { tagCounts, matchTags, tagMatches, useTagFilter } from '@/lib/tagUtil';
+import { useTagColors, tagChip, tagInk } from '@/lib/tagColors';
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -28,6 +31,8 @@ function DotoriPageInner() {
   // 저장은 이 섹션 자리만 교체 — 걸러진 목록을 그대로 넘겨도 다른 섹션이 지워지지 않는다
   const setItems = sectionSetter(itemsAll, sec.id, setItemsAll);
   const [tab, setTab] = useState<Tab>('all');
+  const [tagSel, toggleTag, clearTags, tagMode, toggleMode] = useTagFilter();   // 자유 태그 필터
+  const [tagColors] = useTagColors();
   const [q, setQ] = useState('');
   const [delFor, setDelFor] = useState<DotoriItem | null>(null);
   const [statusFor, setStatusFor] = useState<string | null>(null);   // 상태 전환 팝업이 열린 카드 id
@@ -46,7 +51,8 @@ function DotoriPageInner() {
     .filter(it => !query
       || it.name.toLowerCase().includes(query)
       || it.writer.toLowerCase().includes(query)
-      || it.tags.some(t => t.toLowerCase().includes(query)));
+      || tagMatches(it, query))
+    .filter(it => matchTags(it, tagSel, tagMode));
 
   const countOf = (t: Tab) =>
     items.filter(it => (t === 'all' ? it.status !== 'done' : it.status === t)).length;
@@ -100,6 +106,9 @@ function DotoriPageInner() {
         </div>
       </div>
 
+      <TagFilter counts={tagCounts(items)} selected={tagSel} onToggle={toggleTag} onClear={clearTags}
+        mode={tagMode} onToggleMode={toggleMode} />
+
       <div className="dt-grid">
         {shown.slice(start, start + PER_DT).map((it, si) => {
           const i = start + si;   // 정렬은 전체 기준 위치로
@@ -150,7 +159,8 @@ function DotoriPageInner() {
               </small>
               {/* 태그가 없어도 줄은 남긴다 — 태그 유무로 카드 키가 달라지지 않게 (v2.0 사용자 요청) */}
               <div className="kw-row">
-                {it.tags.map(t => <span key={t} className="pill">{t}</span>)}
+                {it.tags.map(t => <span key={t} className="pill" style={{ cursor: 'var(--cur-pointer,pointer)', ...tagInk(tagColors, t) }}
+                  onClick={e => { e.stopPropagation(); toggleTag(t); }}>{t}</span>)}
               </div>
             </div>
           </div>

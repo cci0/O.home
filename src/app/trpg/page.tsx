@@ -17,7 +17,8 @@ import { CropEditor, CroppedBlobImg, CropValue, CropImg } from '@/components/ui/
 import { useToast } from '@/components/ui/Toast';
 import { TagList } from '@/components/ui/TagList';
 import { TagInput } from '@/components/ui/TagInput';
-import { parseTags, tagCounts, matchTags, tagMatches, useTagFilter } from '@/lib/tagUtil';
+import { parseTags, tagCounts, matchTags, tagMatches, useTagFilter, foldTags, TAG_FOLD_LIMIT } from '@/lib/tagUtil';
+import { useTagColors, tagChip, tagInk } from '@/lib/tagColors';
 
 import { useSiteSettings } from '@/lib/siteStore';
 import { useMainStore } from '@/lib/mainStore';
@@ -42,7 +43,9 @@ function TrpgPageInner() {
   const [rels] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
   const { editOn } = useMainStore();          // 편집모드 — 상단바 토글 (다른 목록과 공통)
   const [filter, setFilter] = useState<string>('all');
-  const [tagFilter, toggleTag, clearTags, tagMode, toggleMode] = useTagFilter();   // 고른 태그 — 모두 달린 로그만 (AND)
+  const [tagFilter, toggleTag, clearTags, tagMode, toggleMode] = useTagFilter();
+  const [tagColors] = useTagColors();
+  const [tagOpen, setTagOpen] = useState(false);   // 태그가 많을 때 접기   // 고른 태그 — 모두 달린 로그만 (AND)
   const [skin, setSkin] = useState<'ticket' | 'basic'>('ticket');
   const [q, setQ] = useState('');
   // 모바일은 티켓 스킨 대신 항상 기본형 리스트 — 좁은 폭에서 티켓이 뭉개지지 않게 (v1.9 사용자 확정)
@@ -88,6 +91,7 @@ function TrpgPageInner() {
     return m;
   }, [logs]);
   const tagList = useMemo(() => tagCounts(logs), [logs]);   // 쓰인 태그와 개수
+  const tagFold = foldTags(tagList, tagFilter, tagOpen);
 
   // 목록에 뜰지는 오직 listHidden — 접근권한(visibility)은 "누가 열 수 있는지"만 정하고
   // 목록에 나오는지는 정하지 않는다 (v2.0 사용자 확정: "나만보기여도 목록에는 표시돼야해").
@@ -268,7 +272,7 @@ function TrpgPageInner() {
         {l.writer && <div className="row"><b>라이터</b> {l.writer}</div>}
         {l.withText && <div className="row"><b>동행</b> {l.withText}</div>}
         {l.date && <div className="row"><b>날짜</b> {l.date.replace(/-/g, '.')}</div>}
-        {(l.tags ?? []).length > 0 && <div className="row"><b>태그</b> {(l.tags ?? []).map(t => <span key={t} style={{ marginRight: 6, cursor: 'var(--cur-pointer,pointer)' }} onClick={e => { e.stopPropagation(); toggleTag(t); }}>#{t}</span>)}</div>}
+        {(l.tags ?? []).length > 0 && <div className="row"><b>태그</b> {(l.tags ?? []).map(t => <span key={t} style={{ marginRight: 6, cursor: 'var(--cur-pointer,pointer)', ...tagInk(tagColors, t) }} onClick={e => { e.stopPropagation(); toggleTag(t); }}>#{t}</span>)}</div>}
         <div className="adm"><span>{site.subtitle}</span><span>{logNo(l)}</span></div>
       </div>
     </div>
@@ -366,11 +370,13 @@ function TrpgPageInner() {
               {tagFilter.length > 1 && (
                 <div className="tag" onClick={toggleMode}>{tagMode === 'or' ? '하나라도 포함' : '모두 포함'} ⇄</div>
               )}
-              {tagList.map(([t, n]) => (
-                <div key={t} className={`tag ${tagFilter.includes(t) ? 'on' : ''}`} onClick={() => toggleTag(t)}>
+              {tagFold.shown.map(([t, n]) => (
+                <div key={t} className={`tag ${tagFilter.includes(t) ? 'on' : ''}`} style={tagChip(tagColors, t, tagFilter.includes(t))} onClick={() => toggleTag(t)}>
                   #{t} <small>{n}</small>
                 </div>
               ))}
+              {tagFold.hidden > 0 && <div className="tag" onClick={() => setTagOpen(true)}>+{tagFold.hidden} 더 보기</div>}
+              {tagOpen && tagList.length > TAG_FOLD_LIMIT && <div className="tag" onClick={() => setTagOpen(false)}>접기 ▴</div>}
             </>
           )}
           {/* 모바일은 항상 기본형 — 스킨 선택 숨김 (v1.9) */}

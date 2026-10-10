@@ -70,3 +70,12 @@ export function useTagFilter(): [string[], (t: string) => void, () => void, TagM
   const toggleMode = useCallback(() => setMode(m => (m === 'and' ? 'or' : 'and')), []);
   return [sel, toggle, clear, mode, toggleMode];
 }
+
+/** 태그가 많을 때 접기 — 앞쪽 limit개만 보이고 나머지는 숨긴다. 이미 고른 태그는 접혀 있어도 항상 보인다 */
+export function foldTags(counts: [string, number][], selected: string[], open: boolean, limit = 24): { shown: [string, number][]; hidden: number } {
+  if (open || counts.length <= limit) return { shown: counts, hidden: 0 };
+  const shown = [...counts.slice(0, limit), ...counts.slice(limit).filter(([t]) => selected.includes(t))];
+  return { shown, hidden: counts.length - shown.length };
+}
+
+export const TAG_FOLD_LIMIT = 24;

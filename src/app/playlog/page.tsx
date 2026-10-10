@@ -1,6 +1,9 @@
 'use client';
 // TRPG 플레이기록 (4.16) — 표 형식 · Date 정렬 · 검색 · 페이지네이션 ·
 // Url 열은 클립 픽토그램(새 탭) · 로그 연결 시 Playtime 클릭으로 로그 이동
+import { TagFilter } from '@/components/ui/TagFilter';
+import { TagList } from '@/components/ui/TagList';
+import { tagCounts, matchTags, tagMatches, useTagFilter } from '@/lib/tagUtil';
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -35,6 +38,8 @@ function PlaylogPageInner() {
   // 저장은 이 섹션 자리만 교체 — 걸러진 목록을 그대로 넘겨도 다른 섹션이 지워지지 않는다
   const setRecords = sectionSetter(recordsAll, sec.id, setRecordsAll);
   const [q, setQ] = useState('');
+  const [tagSel, toggleTag, clearTags, tagMode, toggleMode] = useTagFilter();   // 자유 태그 필터
+  useEffect(() => { setPage(1); }, [tagSel, tagMode]);
   const [desc, setDesc] = useState(true);       // Date 정렬 방향
   const [page, setPage] = useState(1);
   const [delFor, setDelFor] = useState<PlayRecord | null>(null);
@@ -62,7 +67,9 @@ function PlaylogPageInner() {
   const filtered = records.filter(r => !query
     || r.scenario.toLowerCase().includes(query)
     || r.writer.toLowerCase().includes(query)
-    || r.withText.toLowerCase().includes(query));
+    || r.withText.toLowerCase().includes(query)
+    || tagMatches(r, query))
+    .filter(r => matchTags(r, tagSel, tagMode));
 
   // Date 정렬 — 날짜 없는 기록은 항상 맨 아래 (4.16)
   const sorted = [...filtered].sort((a, b) => {
@@ -90,6 +97,9 @@ function PlaylogPageInner() {
           {isAdmin && <button className="btn btn-dark" onClick={() => router.push('/playlog/new' + secQuery('playlog', sec.id))}>＋ ADD RECORD</button>}
         </div>
       </div>
+
+      <TagFilter counts={tagCounts(records)} selected={tagSel} onToggle={toggleTag} onClear={clearTags}
+        mode={tagMode} onToggleMode={toggleMode} />
 
       <div className="panel" style={{ padding: '10px 16px 16px', overflowX: 'auto' }}>
         <table className="pl-table">
@@ -129,6 +139,7 @@ function PlaylogPageInner() {
                     {r.scenarioLink
                       ? <a href={r.scenarioLink} target="_blank" rel="noreferrer" data-tip="시나리오 링크 (새 탭)">{r.scenario}</a>
                       : r.scenario}
+                    <TagList tags={r.tags} max={4} onPick={toggleTag} style={{ marginTop: 3, fontSize: 11 }} />
                   </td>
                 )}
                 {show('writer') && <td>{r.writer}</td>}

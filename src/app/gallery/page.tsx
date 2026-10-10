@@ -1,6 +1,7 @@
 'use client';
 // EditableDesc 주입
 // 그림백업게시판 (4.11) — 갤러리/리스트 토글 · 로그/단일 뱃지 · 접기 썸네일 블러
+import { useTagColors, tagChip, tagInk } from '@/lib/tagColors';
 import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
@@ -38,7 +39,8 @@ function BackupPageInner() {
     if (menuLoaded && !viewInit) { setView(menuSet.backupView); setViewInit(true); }
   }, [menuLoaded, viewInit, menuSet.backupView]);
   const [q, setQ] = useState('');
-  const [tagSel, toggleTag, clearTags, tagMode, toggleMode] = useTagFilter();   // 자유 태그 필터
+  const [tagSel, toggleTag, clearTags, tagMode, toggleMode] = useTagFilter();
+  const [tagColors] = useTagColors();   // 자유 태그 필터
   const [unveiled, setUnveiled] = useState<Record<string, boolean>>({});
   /* 우클릭 → 썸네일 수정 (v2.0 사용자 요청) — 리스트에서 바로 대표 이미지 크롭을 고친다.
      수정 화면까지 안 가도 되게. 관리자와 글쓴이만, 이미지가 있는 글만 */
@@ -132,7 +134,7 @@ function BackupPageInner() {
                   <small>
                     {meta(p)}
                     {/* 태그 (v2.0 사용자 요청) */}
-                    {(p.tags ?? []).map(t => <i key={t} className="tag-in" style={{ cursor: 'var(--cur-pointer,pointer)' }} onClick={e => { e.stopPropagation(); toggleTag(t); }}>#{t}</i>)}
+                    {(p.tags ?? []).map(t => <i key={t} className="tag-in" style={{ cursor: 'var(--cur-pointer,pointer)', ...tagInk(tagColors, t) }} onClick={e => { e.stopPropagation(); toggleTag(t); }}>#{t}</i>)}
                   </small>
                 </div>
               </div>
@@ -154,7 +156,7 @@ function BackupPageInner() {
                 <small>
                   {meta(p)}
                   {/* 태그 — 작성자 왼쪽 줄에 (v2.0 사용자 요청) */}
-                  {(p.tags ?? []).map(t => <i key={t} className="tag-in" style={{ cursor: 'var(--cur-pointer,pointer)' }} onClick={e => { e.stopPropagation(); toggleTag(t); }}>#{t}</i>)}
+                  {(p.tags ?? []).map(t => <i key={t} className="tag-in" style={{ cursor: 'var(--cur-pointer,pointer)', ...tagInk(tagColors, t) }} onClick={e => { e.stopPropagation(); toggleTag(t); }}>#{t}</i>)}
                 </small>
               </div>
               <small>{p.author}</small>

@@ -1,6 +1,8 @@
 ﻿'use client';
 // 플레이기록 입력 폼 (4.16 v1.8) — 라벨 영문 통일 · 플레이스홀더 없음 ·
 // 시나리오 자동완성(기존 기록 검색 드롭다운) · 로그 연결(외부 URL / 내 백업 로그 검색 토글)
+import { TagInput } from '@/components/ui/TagInput';
+import { parseTags } from '@/lib/tagUtil';
 import React, { useState } from 'react';
 import { PlayRecord, TrpgLog, TRPG_SEED } from '@/lib/galleryStore';
 import { useLocalList } from '@/lib/postStore';
@@ -11,6 +13,7 @@ export interface PlaylogFormValue {
   date?: string; scenario: string; scenarioLink?: string;
   writer: string; withText: string; role: string; playtime: string;
   url?: string; logId?: string;
+  tags?: string[];
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -38,6 +41,7 @@ export function PlaylogForm({ initial, records, onSave, onCancel }: {
   const [withText, setWithText] = useState(initial?.withText ?? '');
   const [role, setRole] = useState(initial?.role ?? '');
   const [playtime, setPlaytime] = useState(initial?.playtime ?? '');
+  const [tagsText, setTagsText] = useState((initial?.tags ?? []).join(', '));   // 자유 태그
   const [linkMode, setLinkMode] = useState<'url' | 'log'>(initial?.logId ? 'log' : 'url');
   const [url, setUrl] = useState(initial?.url ?? '');
   const [logId, setLogId] = useState(initial?.logId ?? '');
@@ -59,6 +63,7 @@ export function PlaylogForm({ initial, records, onSave, onCancel }: {
       writer: writer.trim(), withText: withText.trim(), role: role.trim(), playtime: playtime.trim(),
       url: linkMode === 'url' ? (url.trim() || undefined) : undefined,
       logId: linkMode === 'log' ? (logId || undefined) : undefined,
+      tags: parseTags(tagsText),
     });
   };
 
@@ -102,6 +107,7 @@ export function PlaylogForm({ initial, records, onSave, onCancel }: {
           <Field label="Role"><KInput value={role} onChange={e => setRole(e.target.value)} /></Field>
         </div>
         <Field label="With"><KInput value={withText} onChange={e => setWithText(e.target.value)} /></Field>
+        <Field label="Tags (optional)"><TagInput value={tagsText} onChange={setTagsText} /></Field>
 
         {/* 로그 연결 — 외부 URL 또는 내 홈 백업 로그 검색 (4.16) */}
         <div>

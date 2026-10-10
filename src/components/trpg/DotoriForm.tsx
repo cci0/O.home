@@ -1,5 +1,6 @@
 ﻿'use client';
 // 도토리 등록/수정 공용 폼 (4.15) — 16:9 이미지 + 시나리오 정보 + 상태
+import { TagInput } from '@/components/ui/TagInput';
 import React, { useState } from 'react';
 import { DotoriItem, DotoriStatus, DOTORI_STATUS_KEYS, useTrpgSettings } from '@/lib/galleryStore';
 import { KInput, KSelect } from '@/components/ui/Kit';
@@ -89,7 +90,7 @@ export function DotoriForm({ initial, onSave, onCancel }: {
               <KInput placeholder="룰" value={rule} onChange={e => setRule(e.target.value)} style={{ maxWidth: 130 }} />
               <KInput placeholder="인원" value={people} onChange={e => setPeople(e.target.value)} style={{ maxWidth: 90 }} />
             </div>
-            <KInput placeholder="태그 — 쉼표로 구분" value={tags} onChange={e => setTags(e.target.value)} />
+            <TagInput value={tags} onChange={setTags} />
             <KInput placeholder="링크 (선택)" value={link} onChange={e => setLink(e.target.value)} />
             <KSelect value={status} onChange={v => setStatus(v as DotoriStatus)}
               options={DOTORI_STATUS_KEYS.map(s => ({ value: s, label: trpgSet.statuses[s].label }))} />
