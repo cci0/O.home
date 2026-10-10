@@ -169,6 +169,13 @@
 
 | 파일 | 바꾼 내용 |
 |---|---|
-| `app/globals.css` | `.wgt.sized > .widget`에 `overflow-y:auto` 두 줄 추가 — 크기를 줄인 위젯이 잘리지 않고 안에서 스크롤 (원작에는 없음, 충돌 시 이 줄만 다시 얹기) |
+| `app/globals.css` | `.wgt.sized > .widget`에 `overflow-y:auto` + 스크롤바 숨김 세 줄 추가 — 크기를 줄인 위젯이 잘리지 않고 안에서 스크롤 (원작에는 없음, 충돌 시 이 줄만 다시 얹기) |
 | `components/main/RecentWidget.tsx` | 보이는 개수 6 → 5 (새 파일) |
 | `components/rels/RelDday.tsx` | 자관 D-day 칩을 어두운 반투명 배경 + 흰 글씨로 (밝은 배경에서도 보이게) (새 파일) |
+
+## 10. TRPG 로그 상세 — 삭제 후 이동 수정 · 이동 버튼
+
+| 파일 | 바꾼 내용 |
+|---|---|
+| `app/trpg/[id]/page.tsx` | import 1줄, `deletedRef` 추가 — 삭제 중이면 「로그가 없다」 판정으로 홈(`/`)에 보내지 않음(삭제하면 원래 갤러리 목록으로 감), 맨 아래에 `<LogNav .../>` 1줄 |
+| `components/trpg/LogNav.tsx` (새 파일) | 오른쪽 아래에 떠 있는 ↑ 맨 위로 · ‹ 이전 로그 · › 다음 로그 · ☰ 목록 버튼 |

@@ -18,6 +18,7 @@ import { CropEditor, CropImg, CropValue } from '@/components/ui/CropEditor';
 import { useToast } from '@/components/ui/Toast';
 import { parseTags } from '@/lib/tagUtil';
 import { TagList } from '@/components/ui/TagList';
+import { LogNav } from '@/components/trpg/LogNav';
 import { TagInput } from '@/components/ui/TagInput';
 
 /** 로그 렌더 프레임 — 대형 문서도 안정적으로 로드되도록 srcdoc 대신 Blob URL 사용 */
@@ -56,6 +57,7 @@ export default function TrpgDetailPage() {
   const [delAsk, setDelAsk] = useState(false);
   const [bodyText, setBodyText] = useState<string | null>(null);
   const frameRef = useRef<HTMLIFrameElement>(null);
+  const deletedRef = useRef(false);     // 삭제 중이면 「로그가 없다」 판정으로 홈에 보내지 않는다 (포크 수정)
   const gotHeightRef = useRef(false);   // 안쪽에서 높이 보고가 왔는지 (안 오면 기본 높이로 되돌린다)
 
   const l = logs.find(x => x.id === id);
@@ -89,7 +91,7 @@ export default function TrpgDetailPage() {
   // 없다는 사용자 요청으로 홈으로 보낸다 (v2.0)
   useEffect(() => {
     if (!loaded) return;
-    if (!l) { router.replace('/'); return; }
+    if (!l) { if (!deletedRef.current) router.replace('/'); return; }
     if (!baseAllowed && !unlocked && !l.password) router.replace('/');
   }, [loaded, l, baseAllowed, unlocked, router]);
   const tryUnlock = () => {
@@ -573,12 +575,14 @@ html,body{margin:0!important;padding:0!important;height:auto!important;min-heigh
         onClose={() => setDelAsk(false)}
         buttons={[
           { label: 'DELETE', kind: 'accent', onClick: () => {
+            deletedRef.current = true;   // 목록에서 빠지는 순간 위 효과가 홈으로 보내지 않게
             setLogs(logs.filter(x => x.id !== l.id));
             setBodies(bodies.filter(x => x.id !== l.id));   // 분리 저장된 본문도 함께 삭제 (v2.0)
             router.push(tt.href);
           } },
           { label: 'CANCEL', kind: 'ghost', onClick: () => setDelAsk(false) },
         ]} />
+      <LogNav logs={logs} cur={l} listHref={tt.href} />
     </section>
   );
 }
