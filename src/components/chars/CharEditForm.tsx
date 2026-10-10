@@ -12,7 +12,7 @@ import { useFonts, deVarFamily } from '@/lib/fontStore';
 import { KInput, KSelect, KStep, KCheck } from '@/components/ui/Kit';
 import { parseTags } from '@/lib/tagUtil';
 import { TagInput } from '@/components/ui/TagInput';
-import { RichEditor } from '@/components/ui/RichEditor';
+import { HtmlRichEditor } from '@/components/ui/HtmlRichEditor';
 import { ColorField } from '@/components/ui/ColorField';
 import { CropEditor, CropValue, CropImg } from '@/components/ui/CropEditor';
 import { DragList } from '@/components/ui/DragList';
@@ -248,7 +248,7 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, existingIds }:
 
         {/* 기본 소개 본문 — 리치 에디터 */}
         <label className="k-label" style={{ margin: 0 }}>기본 정보 소개 본문</label>
-        <RichEditor value={basicHtml} onChange={setBasicHtml}
+        <HtmlRichEditor value={basicHtml} onChange={setBasicHtml}
           placeholder="캐릭터 소개를 작성하세요 — 이미지 삽입 가능 (스크립트 불허 6.3)" />
 
         {/* 추가 탭 — 목록만, 내용은 전용 화면에서 */}
@@ -401,7 +401,7 @@ function TabEditView({ tab, onChange, onDelete, onBack }: {
           onChange={e => onChange({ subtitle: e.target.value })} />
       </div>
       {/* 리치 에디터 (TipTap) — 툴바로 서식·이미지 삽입, 출력은 HTML */}
-      <RichEditor value={tab.html} onChange={html => onChange({ html })}
+      <HtmlRichEditor value={tab.html} onChange={html => onChange({ html })}
         placeholder="탭 내용을 작성하세요 — 이미지 삽입 가능 (스크립트 불허 6.3)" />
       <button className="btn btn-dark" style={{ justifySelf: 'end' }} onClick={onBack}>완료 — 목록으로</button>
     </div>

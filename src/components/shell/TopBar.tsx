@@ -228,6 +228,10 @@ export function TopBar() {
         ✎ 편집중
       </span>
 
+      {/* 전체 검색 (v2.0 사용자 요청) */}
+      <button className="btn btn-ghost" style={{ height: 27, padding: '0 11px', fontSize: 10.5, whiteSpace: 'nowrap' }}
+        onClick={() => nav('/search')}>검색</button>
+
       {/* 사용자 영역 — 비로그인: 로그인 버튼 / 로그인: 프로필 드롭다운 (3장 주석, 4.0) */}
       {user ? (
         <div className="user-wrap" ref={userRef}>
