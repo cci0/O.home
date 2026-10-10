@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useRawList } from '@/lib/rawList';
 import { Character, CHAR_SEED } from '@/lib/charStore';
-import { useVisibleWorlds, countByWorld, worldPath } from '@/lib/worldStore';
+import { useVisibleWorlds, countByWorld, worldPath, type World } from '@/lib/worldStore';
+import { newId } from '@/lib/postStore';
 import { SearchBar } from '@/components/ui/Kit';
 import { TagFilter } from '@/components/ui/TagFilter';
 import { TagList } from '@/components/ui/TagList';
@@ -23,6 +24,28 @@ export default function WorldsPage() {
   const worlds = useVisibleWorlds();
   const chars = useRawList<Character>('ohome.chars.v1', CHAR_SEED);
   const [q, setQ] = useState('');
+  // JSON 가져오기 — 세계관 문서를 파일로 한꺼번에 등록 (관리자). 공개범위는 파일에 적힌 대로(기본 나만보기)
+  const importJson = async (file?: File) => {
+    if (!file) return;
+    try {
+      const arr = JSON.parse(await file.text());
+      if (!Array.isArray(arr)) throw new Error('목록이 아님');
+      const today = new Date().toISOString().slice(0, 10);
+      const made: World[] = arr.filter(x => x && typeof x.name === 'string').map((x, i) => ({
+        id: newId() + i,
+        name: x.name, sub: x.sub || undefined, label: x.label || undefined,
+        tags: Array.isArray(x.tags) ? x.tags : [],
+        visibility: x.visibility === 'public' || x.visibility === 'member' ? x.visibility : 'private',
+        tabs: (Array.isArray(x.tabs) ? x.tabs : []).map((t: { title?: string; html?: string }, j: number) => ({ id: newId() + j, title: t.title ?? '', html: t.html ?? '' })),
+        date: today,
+      }));
+      if (made.length === 0) throw new Error('가져올 세계관이 없음');
+      await worlds.save([...worlds.list, ...made]);
+      toast(`세계관 ${made.length}개를 가져왔습니다 — 공개범위는 각 수정 화면에서 바꿀 수 있어요`);
+    } catch (e) {
+      toast(`가져오지 못했습니다 — ${e instanceof Error ? e.message : '파일을 확인해 주세요'}`);
+    }
+  };
   const [tagSel, toggleTag, clearTags, tagMode, toggleMode] = useTagFilter();
   const counts = useMemo(() => countByWorld(chars.list, isAdmin), [chars.list, isAdmin]);
 
@@ -37,7 +60,14 @@ export default function WorldsPage() {
         <EditableDesc k="worlds-desc" def="세계관 목록 — 캐릭터가 속한 세계" />
         <div className="head-actions">
           <SearchBar onSearch={setQ} />
-          {isAdmin && <button className="btn btn-dark" onClick={() => router.push('/worlds/new')}>＋ ADD WORLD</button>}
+          {isAdmin && (
+            <>
+              <input id="world-import-in" type="file" accept="application/json,.json" hidden
+                onChange={e => { importJson(e.target.files?.[0]); e.target.value = ''; }} />
+              <button className="btn btn-ghost" onClick={() => document.getElementById('world-import-in')?.click()}>IMPORT</button>
+              <button className="btn btn-dark" onClick={() => router.push('/worlds/new')}>＋ ADD WORLD</button>
+            </>
+          )}
         </div>
       </div>
       <TagFilter counts={tagCounts(worlds.visible)} selected={tagSel} onToggle={toggleTag} onClear={clearTags} mode={tagMode} onToggleMode={toggleMode} />
