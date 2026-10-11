@@ -908,8 +908,6 @@ export default function RelDetailPage() {
         <div className="catch" style={{ color: auSt.cpColor }}>
           {au?.catchphrase || rel.catchphrase}
         </div>
-        <TagList tags={rel.tags} href="/rels" style={{ justifyContent: 'center', marginTop: 8 }} />
-        <RelDdayChips ddays={rel.ddays} style={{ marginTop: 10 }} />
         {isDuo && pairSlots[1] && (
           <div className="quote r" style={{
             color: pairSlots[1].quoteColor,
@@ -917,6 +915,14 @@ export default function RelDetailPage() {
           } as React.CSSProperties}>{pairSlots[1].quote}</div>
         )}
       </div>
+      {/* 태그 · D-day (포크) — 히어로 안에 두면 히어로가 길어져 양쪽 대사(원작: 히어로 바닥 고정)가
+          어정쩡하게 밀리고 모바일 순서도 꼬여서, 히어로 바로 아래 줄로 따로 뺐다 */}
+      {((rel.tags?.length ?? 0) > 0 || (rel.ddays?.length ?? 0) > 0) && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginTop: 22 }}>
+          <TagList tags={rel.tags} href="/rels" chip style={{ justifyContent: 'center' }} />
+          <RelDdayChips ddays={rel.ddays} />
+        </div>
+      )}
 
       {isDuo ? (
         <div className="rel-body" style={{ fontFamily: familyOf(auBodyFont) }}>
