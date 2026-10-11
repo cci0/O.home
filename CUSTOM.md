@@ -84,7 +84,7 @@
 | 파일 | 바꾼 내용 |
 |---|---|
 | `app/chars/[id]/page.tsx` | 이름 아래 `TagList`, 소개 본문 아래 `CharLogs` |
-| `app/rels/[id]/page.tsx` | 자관명 아래 `TagList` |
+| `app/rels/[id]/page.tsx` | 히어로(`rel-hero`) **바로 아래** 줄에 `TagList` (13번 참고) |
 | `app/trpg/[id]/page.tsx` | 제목 아래 `TagList`(`gridColumn: 1` 포함), 수정 모달 태그 칸 |
 | `app/gallery/[id]/page.tsx` | 기존 태그를 눌러서 목록으로 이동 + 태그 색 |
 
@@ -162,7 +162,7 @@
 | `components/rels/RelForm.tsx` | import 2줄, `ddays` 상태·저장값, D-DAY 편집칸 (AU 편집에서는 숨김) |
 | `app/rels/new/page.tsx` | 저장 값에 `ddays` 전달 |
 | `app/rels/[id]/edit/page.tsx` | 저장 값에 `ddays` 전달 (AU 편집 제외) |
-| `app/rels/[id]/page.tsx` | import 1줄 + 이름 아래 `<RelDdayChips/>` 1줄 |
+| `app/rels/[id]/page.tsx` | import 1줄 + 히어로 **바로 아래** 줄에 `<RelDdayChips/>` (13번 참고) |
 | `components/main/widgets.tsx` | import 1줄, `DdayWidget`의 `items`에 자관 D-day를 이어 붙임, 행 `key` 변경 |
 
 ## 9. 위젯 스크롤 · RECENT 5개 · D-day 칩 색
@@ -199,3 +199,14 @@
 | 파일 | 바꾼 내용 |
 |---|---|
 | `components/settings/TagPane.tsx` (새 파일) | 태그 목록을 한 줄씩으로 압축 — 색 점(누르면 색 고르는 칸이 그 줄 아래에 열림) · #태그 · 종류별 개수 · 총 개수 · 「이름 바꾸기 · 삭제」(테두리 없는 글자 버튼, 항상 표시). 위에 태그 찾기 · 정렬(많이 쓴 순/이름순) · 종류 거르기(전체/캐릭터/자관/로그…, 태그가 있는 종류만 표시) 추가. 개수 줄의 「TRPG」 표기도 「로그」로. 기능(이름 바꾸기·합치기·삭제·색)은 그대로 |
+
+## 13. 자관 상세 — 태그·D-day 위치·가독성 정리 (PC·모바일)
+
+태그·D-day를 히어로(`.rel-hero`) **안**에 넣었더니 히어로가 길어져, 원작이 히어로 바닥에 고정해 둔 양쪽 대사가 아래로 밀려 어정쩡하게 떠 있었고, 모바일은 「대사 · 이름 · 태그 · D-day · 대사」로 순서가 꼬였음.
+
+| 파일 | 바꾼 내용 |
+|---|---|
+| `app/rels/[id]/page.tsx` | `TagList`·`RelDdayChips`를 히어로 `</div>` **바로 뒤** 별도 줄(가운데 정렬, 위 여백 22px)로 옮김. 둘 다 없으면 그 줄 자체를 안 그림. 원작 히어로 안쪽은 원래대로 |
+| `components/ui/TagList.tsx` (새 파일) | `chip` 옵션 추가 — 어두운 반투명 칩 + 흰 글씨(D-day 칩과 같은 모양), 태그 색은 앞의 작은 점으로. 자관 상세의 태그에만 `chip`을 켜서 밝은 헤더 위에서도 잘 보이게. 다른 곳의 태그 표시는 그대로 |
+
+충돌 시: 원작 히어로 안에 `TagList`/`RelDdayChips`를 넣지 말고, 히어로 블록이 끝난 뒤에 다시 얹기.
