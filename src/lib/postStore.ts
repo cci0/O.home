@@ -132,8 +132,10 @@ export function useLocalList<T extends { id?: string }>(key: string, seed: T[]):
           .catch(() => { if (alive) setLoaded(true); });
       };
       load();
-      const off = subscribeTable(table, () => load(true));   // 다른 사람이 쓰면 바로 반영
-      return () => { alive = false; off(); };
+      // 다른 사람(다른 창)이 쓰면 바로 반영 — 한 번 저장에 신호가 여러 개 와도(순서 바꾸기 등) 0.3초 모아 한 번만 받는다
+      let tm: ReturnType<typeof setTimeout> | undefined;
+      const off = subscribeTable(table, () => { clearTimeout(tm); tm = setTimeout(() => load(true), 300); });
+      return () => { alive = false; clearTimeout(tm); off(); };
     }
     try {
       const raw = localStorage.getItem(key);
