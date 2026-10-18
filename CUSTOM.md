@@ -563,3 +563,20 @@ AU를 보는 중이면 그 AU에만 저장된다. AU에서 안 고르면(「원�
 | `lib/backend/types.ts` | `COLLECTION_OF`에 `'ohome.cgroups.v1': 'char_groups'` 1줄 |
 | `app/chars/[id]/page.tsx` | import 1줄 · 태그 아래 `<CharGroupsBlock …/>` 1줄 |
 | `app/worlds/[id]/page.tsx` | import 1줄 · 자관 위에 `<WorldGroupsBlock …/>` 1줄 |
+
+## 41. 메인 위젯 「BIRTHDAY」 — 다가오는 캐릭터 생일
+
+생일 칸을 따로 만들지 않고 캐릭터 **기본 정보 항목**의 `생일` 칸을 읽는다(편집 화면 그대로).
+- 항목 이름: 생일 · 생년월일 · 탄생일 · Birthday · B-day (띄어쓰기·대소문자 무시)
+- 값: `3월 14일` · `3/14` · `03.14` · `1998-03-14` · `1998.3.14` 등 숫자 날짜 (읽을 수 없는 값은 건너뜀) · 2월 29일생은 평년에 2월 28일
+- 다가오는 순서로 초상 · 이름 · 날짜 · `D-n` / 오늘이면 `TODAY 🎂`(강조) · 누르면 그 캐릭터로 · 자정을 넘기면 저절로 다시 계산
+- 설정(편집모드 우클릭 > 설정): 위젯 제목 · 며칠 앞까지(기본 60일) · 몇 명까지(기본 5명) · OC 캐릭터만(39번 구분 태그)
+- 볼 수 있는 캐릭터만(비공개는 관리자만) · AU 말고 원본 프로필 기준 · 막 추가했을 때 기본 너비 260px
+- 위젯 추가: 편집모드 > ＋ 위젯 > BIRTHDAY
+
+| 파일 | 바꾼 내용 |
+|---|---|
+| `components/main/BirthdayWidget.tsx` (새 파일) | 위젯 · 생일 읽기 · 설정 창 |
+| `lib/mainStore.tsx` | `WidgetType`에 `'birthday'` · `WIDGET_META`에 birthday 1줄 |
+| `app/page.tsx` | `ADDABLE`·`EDITABLE`에 `'birthday'` |
+| `components/main/widgets.tsx` | import 1줄 · `case 'birthday'` 1줄 |
