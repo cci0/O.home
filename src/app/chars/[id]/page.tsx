@@ -26,6 +26,7 @@ import { DetailLayoutButton, detailLayoutOf, DETAIL_LAYOUT_CSS } from '@/compone
 import { CharNav } from '@/components/chars/CharNav';   // 포크: 떠 있는 이동 버튼
 import { OcMark, useStripOc } from '@/components/chars/OcFilter';   // 포크: OC 표시
 import { CharGroupsBlock } from '@/components/chars/CharGroups';   // 포크: 묶음(가족·소속·팀)
+import { ArtLightbox } from '@/components/chars/ArtLightbox';   // 포크: 아트 크게 보기
 
 function CharDetailInner() {
   const { id } = useParams<{ id: string }>();
@@ -39,6 +40,7 @@ function CharDetailInner() {
   const params = useSearchParams();
   const [tab, setTab] = useState('basic');
   const [artIdx, setArtIdx] = useState(0);
+  const [artBig, setArtBig] = useState<{ refs: string[]; i: number } | null>(null);   // 포크: 크게 보기
   const [delAsk, setDelAsk] = useState(false);   // 캐릭터 삭제 확인
   const infoRef = useRef<HTMLDivElement>(null);
 
@@ -231,8 +233,9 @@ function CharDetailInner() {
           const cur = Math.min(artIdx, arts.length - 1);
           return (
             <div className="profile-center" ref={artBoxRef}
-              style={{ cursor: arts.length > 1 ? 'pointer' : undefined }}
-              onClick={() => { if (arts.length > 1) setArtIdx(i => (i + 1) % arts.length); }}
+              style={{ cursor: 'zoom-in' }}
+              /* 누르면 크게 보기 (포크) — 다른 그림은 아래 점을 누르거나 크게 보기 안에서 넘긴다 */
+              onClick={() => setArtBig({ refs: arts.length ? arts : [eff.artUrl!], i: cur })}
               /* 대표 아트 우클릭 → 이 화면에 보일 위치 조정 (관리자, v2.0 사용자 확정) */
               onContextMenu={e => {
                 if (!(isAdmin || charGrant(ch, user?.id) === 'edit') || cur !== 0) return;
@@ -249,10 +252,14 @@ function CharDetailInner() {
               {arts.length > 1 && (
                 <div style={{ position: 'absolute', left: 0, right: 0, bottom: 12, display: 'flex', justifyContent: 'center', gap: 5, zIndex: 3 }}>
                   {arts.map((_, i) => (
-                    <i key={i} style={{
-                      width: i === cur ? 16 : 6, height: 6, borderRadius: 4,
-                      background: i === cur ? '#fff' : 'rgba(255,255,255,.45)', transition: '.2s',
-                    }} />
+                    <button key={i} type="button" aria-label={`${i + 1}번째 그림`} title={`${i + 1} / ${arts.length}`}
+                      onClick={e => { e.stopPropagation(); setArtIdx(i); }}
+                      style={{ padding: '6px 2px', border: 0, background: 'transparent', cursor: 'pointer', lineHeight: 0 }}>
+                      <i style={{
+                        display: 'block', width: i === cur ? 16 : 6, height: 6, borderRadius: 4,
+                        background: i === cur ? '#fff' : 'rgba(255,255,255,.45)', transition: '.2s',
+                      }} />
+                    </button>
                   ))}
                 </div>
               )}
@@ -338,6 +345,7 @@ function CharDetailInner() {
           onClose={() => setArtCropOpen(null)}
           onApply={c => { saveArtCrop(c); setArtCropOpen(null); }} />
       )}
+      {artBig && <ArtLightbox refs={artBig.refs} start={artBig.i} onClose={last => { setArtIdx(last); setArtBig(null); }} />}
       {/* 떠 있는 이동 버튼 — 맨 위로 · 이전/다음 캐릭터 · 목록 (포크) */}
       <CharNav chars={chars} cur={ch} listHref={tt.href} />
     </section>
