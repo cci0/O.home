@@ -6,8 +6,8 @@
 //   · OC 카드 썸네일 왼쪽 위에 작은 OC 표시 · 캐릭터 상세 소개 아래에도 OC 표시
 //   · 구분 태그는 태그 줄·카드·상세의 태그 목록에서는 빼서 두 번 보이지 않게
 //   · 고른 보기는 이 브라우저에 기억 (보는 사람마다 따로)
-// 구분 태그 이름은 환경설정 > 메뉴 관리 > 권한 「OC 구분 태그」에서 바꾼다
-// (메뉴 설정 ohome.menuset.v1 안 ocTag — 원작 SETTING_KEYS를 건드리지 않으려고).
+// 구분 태그 이름과 나머지 캐릭터 이름(기본 NPC)은 환경설정 > 메뉴 관리 > 권한 「OC 구분 태그」에서 바꾼다
+// (메뉴 설정 ohome.menuset.v1 안 ocTag · ocOther — 원작 SETTING_KEYS를 건드리지 않으려고).
 // 새 파일로 따로 둔 이유: 원작 저장소가 업데이트돼도 충돌하지 않게 (원작 파일에는 몇 줄만).
 import React, { useCallback, useEffect, useState } from 'react';
 import { useMenuSettings, type MenuSettings } from '@/lib/menuStore';
@@ -15,8 +15,9 @@ import type { Character } from '@/lib/charStore';
 import { KInput } from '@/components/ui/Kit';
 
 export type OcMode = 'all' | 'oc' | 'npc';
-type WithOc = MenuSettings & { ocTag?: string };
+type WithOc = MenuSettings & { ocTag?: string; ocOther?: string };
 const DEFAULT_TAG = 'OC';
+const DEFAULT_OTHER = 'NPC';
 const MODE_KEY = 'ohome.ocmode.v1';
 
 const norm = (t: string) => t.trim().replace(/^#/, '').toLowerCase();
@@ -25,6 +26,12 @@ const norm = (t: string) => t.trim().replace(/^#/, '').toLowerCase();
 export function useOcTag(): string {
   const [ms] = useMenuSettings();
   return ((ms as WithOc).ocTag ?? '').trim().replace(/^#/, '') || DEFAULT_TAG;
+}
+
+/** 구분 태그가 없는 캐릭터를 부르는 이름 (빈 값이면 기본 NPC) */
+export function useOcOtherLabel(): string {
+  const [ms] = useMenuSettings();
+  return ((ms as WithOc).ocOther ?? '').trim() || DEFAULT_OTHER;
 }
 
 export const hasOcTag = (tags: string[] | undefined, ocTag: string) =>
@@ -52,6 +59,7 @@ const CSS = `
  *  all: 볼 수 있는 캐릭터 전부(버튼을 띄울지 판단) · base: 지금 세계관 탭의 캐릭터(숫자) */
 export function useOcFilter(all: Character[], base: Character[]) {
   const ocTag = useOcTag();
+  const other = useOcOtherLabel();
   const [mode, setModeState] = useState<OcMode>('all');
   useEffect(() => {
     try { const v = localStorage.getItem(MODE_KEY); if (v === 'oc' || v === 'npc') setModeState(v); } catch { /* 무시 */ }
@@ -76,11 +84,11 @@ export function useOcFilter(all: Character[], base: Character[]) {
     </button>
   );
   const element = enabled ? (
-    <div className="oc-seg" role="tablist" aria-label={`${ocTag} / NPC 보기`}>
+    <div className="oc-seg" role="tablist" aria-label={`${ocTag} / ${other} 보기`}>
       <style>{CSS}</style>
       {btn('all', '전체', base.length)}
       {btn('oc', ocTag, nOc)}
-      {btn('npc', 'NPC', base.length - nOc)}
+      {btn('npc', other, base.length - nOc)}
     </div>
   ) : null;
 
@@ -110,23 +118,39 @@ export function useStripOc(tags: string[] | undefined) {
 export function OcTagOptions() {
   const [ms, patch] = useMenuSettings();
   const cur = (ms as WithOc).ocTag ?? '';
+  const curOther = (ms as WithOc).ocOther ?? '';
   const [text, setText] = useState(cur);
+  const [otherText, setOtherText] = useState(curOther);
   useEffect(() => { setText(cur); }, [cur]);
+  useEffect(() => { setOtherText(curOther); }, [curOther]);
   const commit = () => {
     const v = text.trim().replace(/^#/, '');
     if (v === cur) return;
     patch({ ocTag: v || undefined } as unknown as Partial<MenuSettings>);
   };
+  const commitOther = () => {
+    const v = otherText.trim();
+    if (v === curOther) return;
+    patch({ ocOther: v || undefined } as unknown as Partial<MenuSettings>);
+  };
   return (
     <div style={{ marginTop: 18 }}>
       <b style={{ fontSize: 13 }}>OC 구분 태그</b>
       <div className="d" style={{ marginTop: 4 }}>
-        이 태그가 달린 캐릭터를 OC(자캐)로, 없는 캐릭터를 NPC로 구분합니다 — 캐릭터 목록의 「전체 | OC | NPC」 전환 · 카드와 상세의 OC 표시.
-        비우면 기본값 OC · 이 태그는 태그 목록에서는 빠집니다
+        이 태그가 달린 캐릭터를 OC(자캐)로, 없는 캐릭터를 나머지로 구분합니다 — 캐릭터 목록의 「전체 | OC | NPC」 전환 · 카드와 상세의 OC 표시.
+        비우면 기본값 · 구분 태그는 태그 목록에서는 빠집니다
       </div>
-      <div style={{ marginTop: 8, maxWidth: 220 }}>
-        <KInput value={text} placeholder={DEFAULT_TAG} maxLength={20} onChange={e => setText(e.target.value)} onBlur={commit}
-          onKeyDown={e => { if (e.key === 'Enter') commit(); }} />
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 8 }}>
+        <label style={{ display: 'grid', gap: 4, width: 180 }}>
+          <span className="d">구분 태그 (표시 이름도 이걸로)</span>
+          <KInput value={text} placeholder={DEFAULT_TAG} maxLength={20} onChange={e => setText(e.target.value)} onBlur={commit}
+            onKeyDown={e => { if (e.key === 'Enter') commit(); }} />
+        </label>
+        <label style={{ display: 'grid', gap: 4, width: 180 }}>
+          <span className="d">나머지 캐릭터 이름</span>
+          <KInput value={otherText} placeholder={DEFAULT_OTHER} maxLength={20} onChange={e => setOtherText(e.target.value)} onBlur={commitOther}
+            onKeyDown={e => { if (e.key === 'Enter') commitOther(); }} />
+        </label>
       </div>
     </div>
   );
