@@ -544,3 +544,22 @@ AU를 보는 중이면 그 AU에만 저장된다. AU에서 안 고르면(「원�
 | `app/chars/page.tsx` | import 1줄 · `useOcFilter` 1줄 · 거르기 1줄 · 머리 버튼 1줄 · 태그 줄 숫자에서 구분 태그 빼기 · 카드에 `<OcBadge …/>` · 카드 태그에서 구분 태그 빼기 |
 | `app/chars/[id]/page.tsx` | import 1줄 · `detailTags` 1줄 · `<OcMark …/>` 1줄 · 태그 목록에 `detailTags` |
 | `app/settings/page.tsx` | import 1줄 · `<ImageShrinkOptions />` 아래 `<OcTagOptions />` 1줄 |
+
+## 40. 캐릭터 묶음 (가족 · 소속 · 팀)
+
+자관과 따로, 여러 캐릭터를 한 번에 묶는 가벼운 관계. 자관 목록에는 나오지 않고 페이지도 따로 없다.
+- 묶음 = 이름 · 종류(가족/소속/팀/친구/연인/기타 또는 직접 입력) · 세계관(선택) · 공개범위(전체/멤버/나만보기) · 멤버(각자 역할, 예: 첫째·단장)
+- **캐릭터 상세**: 태그 아래 「관계」 — 그 캐릭터가 속한 묶음만 한 줄씩(`가족 · 유씨 가문 · 막내 · 3명`), 누르면 멤버가 펼쳐짐(초상 + 이름 + 역할, 누르면 그 캐릭터로). 묶음이 여러 개여도 짧게.
+- **세계관 상세**: 소속 캐릭터 아래 「세계관 관계」 — 그 세계관 묶음 전부 펼쳐서
+- 편집(관리자): 캐릭터 상세 「관계 ＋」(그 캐릭터가 들어간 새 묶음) · 펼친 묶음의 ✎ · 세계관 상세 「＋ 묶음」/✎ → 같은 편집 창. 멤버는 이름으로 찾아 넣기(같은 세계관 캐릭터 먼저) · 역할 · 순서(↑) · 빼기 · 묶음 삭제.
+- 공개범위는 서버(RLS)에서 걸러짐 — 나만보기 묶음은 방문자에게 아예 안 내려감 · 볼 수 없는 캐릭터는 멤버에서 빠짐
+- 실시간 — 다른 창에서 고치면 바로 반영
+- **Supabase**: `supabase/char_groups.sql` 한 번 실행 (표 + 권한 + 실시간)
+
+| 파일 | 바꾼 내용 |
+|---|---|
+| `supabase/char_groups.sql` (새 파일) | 묶음 표 (한 번 실행) |
+| `components/chars/CharGroups.tsx` (새 파일) | 상세 「관계」 · 세계관 「세계관 관계」 · 편집 창 |
+| `lib/backend/types.ts` | `COLLECTION_OF`에 `'ohome.cgroups.v1': 'char_groups'` 1줄 |
+| `app/chars/[id]/page.tsx` | import 1줄 · 태그 아래 `<CharGroupsBlock …/>` 1줄 |
+| `app/worlds/[id]/page.tsx` | import 1줄 · 자관 위에 `<WorldGroupsBlock …/>` 1줄 |

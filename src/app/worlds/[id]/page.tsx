@@ -11,6 +11,7 @@ import { sanitizeHtml } from '@/lib/sanitize';
 import { CroppedBlobImg } from '@/components/ui/CropEditor';
 import { TagList } from '@/components/ui/TagList';
 import { PageTitle } from '@/components/ui/PageText';
+import { WorldGroupsBlock } from '@/components/chars/CharGroups';   // 포크: 세계관 관계(묶음)
 
 export default function WorldDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -83,6 +84,8 @@ export default function WorldDetailPage() {
             ))}
           </div>
         )}
+
+        <WorldGroupsBlock worldId={w.id} chars={chars.list} labelStyle={lb} />
 
         {relList.length > 0 && (
           <>

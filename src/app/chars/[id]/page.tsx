@@ -25,6 +25,7 @@ import { ConfirmModal } from '@/components/ui/Modal';
 import { DetailLayoutButton, detailLayoutOf, DETAIL_LAYOUT_CSS } from '@/components/chars/DetailLayout';   // 포크: 캐릭터별 상세 배치
 import { CharNav } from '@/components/chars/CharNav';   // 포크: 떠 있는 이동 버튼
 import { OcMark, useStripOc } from '@/components/chars/OcFilter';   // 포크: OC 표시
+import { CharGroupsBlock } from '@/components/chars/CharGroups';   // 포크: 묶음(가족·소속·팀)
 
 function CharDetailInner() {
   const { id } = useParams<{ id: string }>();
@@ -273,6 +274,7 @@ function CharDetailInner() {
           <CharWorld worldId={eff.worldId} style={{ marginBottom: 8 }} />
           <OcMark tags={eff.tags} />
           <TagList tags={detailTags} href={sectionHref('chars', eff.secId ?? MAIN_SEC)} style={{ marginBottom: 14 }} />
+          <CharGroupsBlock ch={ch} chars={chars} />
 
           {tab === 'basic' ? (
             <>
