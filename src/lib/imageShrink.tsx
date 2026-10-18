@@ -12,6 +12,7 @@
 import React from 'react';
 import { useMenuSettings, currentMenuSettings, type MenuSettings } from './menuStore';
 import { KCheck } from '@/components/ui/Kit';
+import { ShrinkExisting } from './shrinkExisting';   // 이미 올린 이미지 줄이기 (포크)
 
 export const MAX_SIDE = 2560;                 // 긴 변 최대 (px)
 const SKIP_UNDER = 1.2 * 1024 * 1024;         // 이보다 작은 파일은 건드리지 않는다
@@ -41,41 +42,51 @@ async function decode(blob: Blob): Promise<{ img: CanvasImageSource; w: number; 
 const toBlob = (c: HTMLCanvasElement, type: string, q: number) =>
   new Promise<Blob | null>(res => { try { c.toBlob(b => res(b), type, q); } catch { res(null); } });
 
+/**
+ * 줄이기 핵심 — 긴 변 MAX_SIDE로 줄이고 다시 압축한다. 줄일 필요가 없거나(작음·GIF 등)
+ * 별로 안 작아지거나(90% 이상) 실패하면 null. 업로드 축소와 「이미 올린 이미지 줄이기」가 함께 쓴다.
+ */
+export async function shrinkCore(blob: Blob, typeHint?: string): Promise<{ out: Blob; w: number; h: number; ow: number; oh: number } | null> {
+  const t = (blob.type || typeHint || '').toLowerCase();
+  if (!/^image\/(jpeg|jpg|png|webp)$/.test(t)) return null;                // GIF·SVG 등은 그대로
+  if (blob.size < SKIP_UNDER) return null;
+  const d = await decode(blob);
+  if (!d || !d.w || !d.h) return null;
+  const scale = Math.min(1, MAX_SIDE / Math.max(d.w, d.h));
+  const w = Math.max(1, Math.round(d.w * scale));
+  const h = Math.max(1, Math.round(d.h * scale));
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+  if (!ctx) { d.done(); return null; }
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(d.img, 0, 0, w, h);
+  const ow = d.w, oh = d.h;
+  d.done();
+
+  // JPG는 JPG로, PNG·WebP는 투명 배경을 지키는 WebP로
+  const want = t.includes('jpeg') || t.includes('jpg') ? 'image/jpeg' : 'image/webp';
+  let out = await toBlob(c, want, QUALITY);
+  if (out && want === 'image/webp' && out.type !== 'image/webp') out = await toBlob(c, 'image/png', 1);   // WebP 미지원 브라우저
+  c.width = 0; c.height = 0;
+  if (!out || out.size >= blob.size * 0.9) return null;   // 별로 안 작아지면 원본
+  return { out, w, h, ow, oh };
+}
+
+export const extOfType = (type: string) => (type === 'image/jpeg' ? 'jpg' : type === 'image/webp' ? 'webp' : 'png');
+
 /** 업로드 직전 축소 — 줄일 필요가 없거나 실패하면 원본을 그대로 돌려준다 (업로드를 막지 않는다) */
 export async function shrinkImage(blob: Blob): Promise<Blob> {
   try {
     if (typeof File === 'undefined' || !(blob instanceof File)) return blob;   // 직접 고른 파일만
-    const t = (blob.type || '').toLowerCase();
-    if (!/^image\/(jpeg|jpg|png|webp)$/.test(t)) return blob;                // GIF·SVG 등은 그대로
-    if (blob.size < SKIP_UNDER) return blob;
     const conf = confNow();
     if (conf.off) return blob;
     if (!conf.gallery && typeof location !== 'undefined' && /^\/gallery(\/|$)/.test(location.pathname)) return blob;
-
-    const d = await decode(blob);
-    if (!d || !d.w || !d.h) return blob;
-    const scale = Math.min(1, MAX_SIDE / Math.max(d.w, d.h));
-    const w = Math.max(1, Math.round(d.w * scale));
-    const h = Math.max(1, Math.round(d.h * scale));
-    const c = document.createElement('canvas');
-    c.width = w; c.height = h;
-    const ctx = c.getContext('2d');
-    if (!ctx) { d.done(); return blob; }
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(d.img, 0, 0, w, h);
-    d.done();
-
-    // JPG는 JPG로, PNG·WebP는 투명 배경을 지키는 WebP로
-    const want = t.includes('jpeg') || t.includes('jpg') ? 'image/jpeg' : 'image/webp';
-    let out = await toBlob(c, want, QUALITY);
-    if (out && want === 'image/webp' && out.type !== 'image/webp') out = await toBlob(c, 'image/png', 1);   // WebP 미지원 브라우저
-    c.width = 0; c.height = 0;
-    if (!out || out.size >= blob.size * 0.9) return blob;   // 별로 안 작아지면 원본
-
-    const ext = out.type === 'image/jpeg' ? 'jpg' : out.type === 'image/webp' ? 'webp' : 'png';
-    const name = blob.name.replace(/\.[^.]+$/, '') + '.' + ext;
-    return new File([out], name, { type: out.type, lastModified: blob.lastModified });
+    const r = await shrinkCore(blob);
+    if (!r) return blob;
+    const name = blob.name.replace(/\.[^.]+$/, '') + '.' + extOfType(r.out.type);
+    return new File([r.out], name, { type: r.out.type, lastModified: blob.lastModified });
   } catch (e) {
     console.warn('[ohome] 이미지 축소 건너뜀', e);
     return blob;
@@ -98,6 +109,7 @@ export function ImageShrinkOptions() {
         <KCheck label="자동 축소 켜기" checked={!cur.off} onChange={v => set({ off: !v })} />
         <KCheck label="갤러리(그림 백업)도 축소 — 끄면 원본 그대로" checked={!!cur.gallery} onChange={v => set({ gallery: v })} />
       </div>
+      <ShrinkExisting includeGallery={!!cur.gallery} />
     </div>
   );
 }
