@@ -529,3 +529,18 @@ AU를 보는 중이면 그 AU에만 저장된다. AU에서 안 고르면(「원�
 |---|---|
 | `supabase/realtime_more.sql` (새 파일) | 실시간 표 추가 SQL (한 번 실행) |
 | `lib/postStore.ts` | 실시간 신호를 0.3초 모아 한 번만 새로 받기 (몇 줄) |
+
+## 39. OC / NPC 구분 (구분 태그)
+
+새 칸 없이 **이미 달아 둔 태그**로 구분한다 — 「구분 태그」(기본 `OC`)가 달린 캐릭터 = OC(자캐), 없으면 NPC. 데이터는 바뀌지 않음.
+- 캐릭터 목록 머리(검색 버튼 왼쪽)에 `전체 | OC | NPC` 전환(숫자 함께) — 세계관 탭·태그 필터와 같이 걸린다(예: 「현대」의 NPC만). 고른 보기는 이 브라우저에 기억. 검색창을 펼치면 옆으로 밀려날 뿐 겹치지 않음. 구분 태그를 하나도 안 쓰면 전환 자체가 안 보임.
+- OC 카드 썸네일 왼쪽 위에 작은 `OC` 표시(NPC는 표시 없음) · 캐릭터 상세 세계관 아래에 `OC` 표시
+- 구분 태그는 태그 줄·카드·상세의 태그 목록에서 빠짐(두 번 안 보이게)
+- 구분 태그 이름: 환경설정 > 메뉴 관리 > 권한 「OC 구분 태그」 (메뉴 설정 `ohome.menuset.v1` 안 `ocTag`, 비우면 OC)
+
+| 파일 | 바꾼 내용 |
+|---|---|
+| `components/chars/OcFilter.tsx` (새 파일) | 전환 버튼 · 카드/상세 표시 · 설정 칸 |
+| `app/chars/page.tsx` | import 1줄 · `useOcFilter` 1줄 · 거르기 1줄 · 머리 버튼 1줄 · 태그 줄 숫자에서 구분 태그 빼기 · 카드에 `<OcBadge …/>` · 카드 태그에서 구분 태그 빼기 |
+| `app/chars/[id]/page.tsx` | import 1줄 · `detailTags` 1줄 · `<OcMark …/>` 1줄 · 태그 목록에 `detailTags` |
+| `app/settings/page.tsx` | import 1줄 · `<ImageShrinkOptions />` 아래 `<OcTagOptions />` 1줄 |

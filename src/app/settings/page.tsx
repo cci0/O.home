@@ -62,6 +62,7 @@ import { SCHEMA_SQL } from '@/lib/schemaSql';
 import { TagPane } from '@/components/settings/TagPane';
 import { TextProtectOptions } from '@/lib/textProtect';
 import { ImageShrinkOptions } from '@/lib/imageShrink';
+import { OcTagOptions } from '@/components/chars/OcFilter';   // 포크: OC 구분 태그
 import { PushAdminRow } from '@/components/shell/PushSettings';
 
 const CATEGORIES = [
@@ -2457,6 +2458,7 @@ function MenuPane() {
           {/* 글 복사 방지 (포크) — 위 이미지 저장 방지와 같은 방식 */}
           <TextProtectOptions />
           <ImageShrinkOptions />
+          <OcTagOptions />
         </div>
       ) : (
       <>

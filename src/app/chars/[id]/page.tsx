@@ -24,6 +24,7 @@ import { useSectionTitle, sectionHref, MAIN_SEC } from '@/lib/sectionStore';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { DetailLayoutButton, detailLayoutOf, DETAIL_LAYOUT_CSS } from '@/components/chars/DetailLayout';   // 포크: 캐릭터별 상세 배치
 import { CharNav } from '@/components/chars/CharNav';   // 포크: 떠 있는 이동 버튼
+import { OcMark, useStripOc } from '@/components/chars/OcFilter';   // 포크: OC 표시
 
 function CharDetailInner() {
   const { id } = useParams<{ id: string }>();
@@ -72,6 +73,7 @@ function CharDetailInner() {
   const auRegistered = !auKey || !!ch?.auProfiles?.[auKey];
   // 표시용 캐릭터 — AU에서 지정한 필드만 base를 대체 (이름·키·성별부터 전부 바뀔 수 있음)
   const eff = ch ? charWithAu(ch, auKey) : undefined;
+  const detailTags = useStripOc(eff?.tags);   // 포크: OC 구분 태그는 태그 목록에서 빼고 OC 표시로
 
   /** 상세 화면 아트 위치 저장 (v2.0) — AU를 보는 중이면 그 AU에만, 아니면 원본에 */
   const saveArtCrop = (c: CropValue | undefined) => {
@@ -269,7 +271,8 @@ function CharDetailInner() {
           }}>{eff.name}</div>
           <div className="sub" style={{ marginBottom: eff.tags?.length ? 6 : 14 }}>{eff.sub}</div>
           <CharWorld worldId={eff.worldId} style={{ marginBottom: 8 }} />
-          <TagList tags={eff.tags} href={sectionHref('chars', eff.secId ?? MAIN_SEC)} style={{ marginBottom: 14 }} />
+          <OcMark tags={eff.tags} />
+          <TagList tags={detailTags} href={sectionHref('chars', eff.secId ?? MAIN_SEC)} style={{ marginBottom: 14 }} />
 
           {tab === 'basic' ? (
             <>
