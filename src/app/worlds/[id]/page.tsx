@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { useRawList } from '@/lib/rawList';
 import { Character, CHAR_SEED, Relation, REL_SEED, charPath, relPath } from '@/lib/charStore';
 import { useVisibleWorlds, useCanSee } from '@/lib/worldStore';
+import { WorldNav } from '@/components/ui/DetailNavs';   // 포크: 떠 있는 이동 버튼
 import { sanitizeHtml } from '@/lib/sanitize';
 import { CroppedBlobImg } from '@/components/ui/CropEditor';
 import { TagList } from '@/components/ui/TagList';
@@ -100,6 +101,7 @@ export default function WorldDetailPage() {
           </>
         )}
       </div>
+      <WorldNav worlds={worlds.visible} cur={w} />
     </section>
   );
 }

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useLocalList } from '@/lib/postStore';
+import { TCharNav } from '@/components/ui/DetailNavs';   // 포크: 떠 있는 이동 버튼
 import { TrpgChar, TCHAR_SEED, faceCrop } from '@/lib/tcharStore';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { CroppedBlobImg } from '@/components/ui/CropEditor';
@@ -134,6 +135,7 @@ export default function TCharDetailPage() {
           { label: 'DELETE', kind: 'accent', onClick: () => { setTchars(tchars.filter(x => x.id !== c.id)); router.push('/tchars'); } },
           { label: 'CANCEL', kind: 'ghost', onClick: () => setDelAsk(false) },
         ]} />
+      <TCharNav tchars={tchars} cur={c} />
     </section>
   );
 }

@@ -18,6 +18,7 @@ import { useToast } from '@/components/ui/Toast';
 import { PageTitle } from '@/components/ui/PageText';
 import { pushNotif } from '@/lib/notifStore';
 import { useSecretPost, deleteSecret, privateIfSecret } from '@/lib/secretPosts';   // 포크: 비밀글 잠금
+import { PostNav } from '@/components/ui/DetailNavs';   // 포크: 떠 있는 이동 버튼
 
 const FOLD_LABEL = { spoiler: '스포일러 주의', adult: '수위 주의' };
 
@@ -235,6 +236,7 @@ export default function BoardDetailPage() {
           } },
           { label: 'CANCEL', kind: 'ghost', onClick: () => setDelAsk(false) },
         ]} />
+      <PostNav posts={posts} cur={post} listHref={boardHref(board.id)} />
     </section>
   );
 }

@@ -20,6 +20,7 @@ import { ConfirmModal } from '@/components/ui/Modal';
 import { PageTitle } from '@/components/ui/PageText';
 import { Lightbox } from '@/components/ui/Lightbox';
 import { CommFormFill } from '@/components/comm/FormFill';
+import { TopListNav } from '@/components/ui/DetailNavs';   // 포크: 떠 있는 이동 버튼 (↑ ☰)
 
 /** 편지봉투 픽토그램 (선 아이콘 — 4.18 문의 링크) */
 function MailIcon() {
@@ -226,6 +227,7 @@ export default function CommDetailPage() {
           { label: 'DELETE', kind: 'accent', onClick: () => { setItems(items.filter(x => x.id !== c.id)); router.push('/comm'); } },
           { label: 'CANCEL', kind: 'ghost', onClick: () => setDelAsk(false) },
         ]} />
+      <TopListNav listHref={sectionHref('comm', c.secId ?? MAIN_SEC)} />
     </section>
   );
 }

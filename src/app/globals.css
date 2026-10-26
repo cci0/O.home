@@ -1533,6 +1533,8 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .tagside .tag.on{background:var(--btn-dark,var(--ink));color:var(--btn-dark-fg,#fff)}
 .tagside .tag small{color:var(--faint);font-size:calc(10px*var(--fs,1))}
 .tagside .tag.on small{color:var(--btn-dark-fg,#aab0ba);opacity:.65}
+/* 포크: 휴대폰 필터 묶음(app/trpg) — PC에서는 감싼 상자가 없는 것처럼 */
+.ts-grp,.ts-chips{display:contents}
 /* 로그 본문 뷰어 — 격리 렌더 (iframe sandbox) */
 .log-frame{width:100%;height:65vh;border:none;border-radius:var(--radius-s);background:transparent;display:block} /* 높이 보고 전 기본값 — 내부 스크롤 가능, 보고 오면 전체 확장 */
 /* TRPG 기본형 리스트 — 한 줄에 두 개 (v2.0 사용자 확정) */
@@ -1795,6 +1797,15 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
   .cal-layout > .panel.cal{display:none}
   /* TRPG 로그 — 필터 사이드는 리스트 아래로 (모바일은 티켓 스킨 대신 기본형, v1.9) */
   .trpg-layout{grid-template-columns:1fr}
+  /* 포크: 아래로 길게 늘어지던 필터를 목록 위로 — 「이름 + 옆으로 미는 칩 한 줄」씩, 두 줄로 끝 */
+  .trpg-layout > .tagside{order:-1;padding:10px 0;display:grid;gap:7px;min-width:0}
+  .trpg-layout > .tagside .ts-grp{display:flex;align-items:center;gap:8px;min-width:0;padding-left:12px}
+  .trpg-layout > .tagside .ts-grp h4{margin:0 !important;flex-shrink:0;width:5.2em;font-size:calc(10px*var(--fs,1));letter-spacing:.08em}
+  .trpg-layout > .tagside .ts-chips{display:flex;gap:6px;flex:1;min-width:0;overflow-x:auto;scrollbar-width:none;padding-right:18px;
+    -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 22px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 22px),transparent)}
+  .trpg-layout > .tagside .ts-chips::-webkit-scrollbar{display:none}
+  .trpg-layout > .tagside .tag{flex-shrink:0;white-space:nowrap;align-items:baseline;gap:5px;padding:5px 11px;border-radius:999px;border:1px solid var(--line)}
+  .trpg-layout > .tagside .tag.on{border-color:transparent}
 }
 /* 스케줄러 모바일 일정 나열 — PC에서는 숨김 (v1.9) */
 .cal-mlist{display:none}

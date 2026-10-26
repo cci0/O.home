@@ -7,6 +7,7 @@ import { useHrefBlock } from '@/components/shell/MenuGuard';
 import { sectionHref, MAIN_SEC, useSectionTitle } from '@/lib/sectionStore';
 import { useAuth } from '@/lib/auth';
 import { useLocalList, fmtDate } from '@/lib/postStore';
+import { GalleryNav } from '@/components/ui/DetailNavs';   // 포크: 떠 있는 이동 버튼
 import { BackupPost, BACKUP_SEED } from '@/lib/galleryStore';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { useBlobUrl } from '@/lib/blobStore';
@@ -157,6 +158,7 @@ export default function BackupDetailPage() {
           { label: 'DELETE', kind: 'accent', onClick: () => { setPosts(posts.filter(x => x.id !== p.id)); router.push(tt.href); } },
           { label: 'CANCEL', kind: 'ghost', onClick: () => setDelAsk(false) },
         ]} />
+      <GalleryNav posts={posts} cur={p} listHref={tt.href} />
     </section>
   );
 }

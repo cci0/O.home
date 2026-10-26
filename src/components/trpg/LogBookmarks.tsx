@@ -323,7 +323,7 @@ const CSS = `
 .lbm-pick button:hover{background:rgba(255,255,255,.24)}
 .lbm-hl{position:fixed;z-index:29;pointer-events:none;border-radius:4px;outline:2px solid rgba(214,158,46,.95);background:rgba(255,214,102,.16)}
 .lbm-picking .log-plain{cursor:pointer}
-@media (max-width:560px){.lbm-pop{left:12px;right:12px;bottom:84px;width:auto;max-height:58vh}.lbm-pick{top:64px;font-size:12px}}
+@media (max-width:620px){.lbm-pop{left:12px;right:12px;bottom:calc(var(--bgm-h,0px) + 68px);width:auto;max-height:58vh}.lbm-pick{top:64px;font-size:12px}}
 `;
 
 const Icon = ({ filled }: { filled?: boolean }) => (

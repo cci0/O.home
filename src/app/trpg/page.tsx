@@ -349,9 +349,11 @@ function TrpgPageInner() {
               onApply={applyOrder} onClose={() => setOrdFor(null)} />
           )}
         </div>
-        {/* 자관 연동 필터 (v1.2) */}
+        {/* 자관 연동 필터 (v1.2)
+            포크: 휴대폰에서는 목록 위로 올려 「이름 + 옆으로 미는 칩 한 줄」씩으로 접는다 (ts-grp·ts-chips — PC에서는 없는 것처럼).
+            휴대폰은 「더 보기」 없이 태그를 모두 한 줄에 — 고른 태그는 맨 앞으로 */}
         <div className="panel tagside">
-          <h4>자관 필터</h4>
+          <div className="ts-grp"><h4>자관 필터</h4><div className="ts-chips">
           <div className={`tag ${filter === 'all' ? 'on' : ''}`} onClick={() => setFilter('all')}>
             전체 <small>{logs.length}</small>
           </div>
@@ -365,24 +367,27 @@ function TrpgPageInner() {
               단발 <small>{counts['none']}</small>
             </div>
           )}
+          </div></div>
           {/* 자유 태그 필터 — 여러 개를 고르면 모두 달린 로그만 */}
           {tagList.length > 0 && (
-            <>
+            <div className="ts-grp">
               <h4 style={{ marginTop: 18 }}>태그 필터</h4>
+              {/* 휴대폰: 태그를 고르면 줄을 처음으로 되돌려, 앞으로 온 고른 태그가 바로 보이게 (key가 바뀌면 새로 그림) */}
+              <div className="ts-chips" key={isMobile ? tagFilter.join('|') : 'pc'}>
               {tagFilter.length > 0 && (
                 <div className="tag" onClick={clearTags}>선택 해제 ✕</div>
               )}
               {tagFilter.length > 1 && (
                 <div className="tag" onClick={toggleMode}>{tagMode === 'or' ? '하나라도 포함' : '모두 포함'} ⇄</div>
               )}
-              {tagFold.shown.map(([t, n]) => (
+              {(isMobile ? [...tagList].sort((a, b) => +tagFilter.includes(b[0]) - +tagFilter.includes(a[0])) : tagFold.shown).map(([t, n]) => (
                 <div key={t} className={`tag ${tagFilter.includes(t) ? 'on' : ''}`} style={tagChip(tagColors, t, tagFilter.includes(t))} onClick={() => toggleTag(t)}>
                   #{t} <small>{n}</small>
                 </div>
               ))}
-              {tagFold.hidden > 0 && <div className="tag" onClick={() => setTagOpen(true)}>+{tagFold.hidden} 더 보기</div>}
-              {tagOpen && tagList.length > TAG_FOLD_LIMIT && <div className="tag" onClick={() => setTagOpen(false)}>접기 ▴</div>}
-            </>
+              {!isMobile && tagFold.hidden > 0 && <div className="tag" onClick={() => setTagOpen(true)}>+{tagFold.hidden} 더 보기</div>}
+              {!isMobile && tagOpen && tagList.length > TAG_FOLD_LIMIT && <div className="tag" onClick={() => setTagOpen(false)}>접기 ▴</div>}
+            </div></div>
           )}
           {/* 모바일은 항상 기본형 — 스킨 선택 숨김 (v1.9) */}
           {!isMobile && (

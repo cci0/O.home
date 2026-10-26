@@ -21,7 +21,9 @@ const CSS = `
   cursor:var(--cur-pointer,pointer);place-items:center}
 .mm-btn:hover{background:rgba(255,255,255,.1)}
 .mm-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round}
-@media (max-width:620px){.mm-btn{display:grid}}
+@media (max-width:620px){.mm-btn{display:grid}
+  /* ☰가 들어오면서 좁은 휴대폰에서 오른쪽 닉네임이 화면 밖으로 잘렸다 — 휴대폰에선 아바타만 (누르면 메뉴는 그대로) */
+  .topbar .user-chip{font-size:0;gap:6px;padding:6px 2px}}
 .mm-ov{position:fixed;inset:0;z-index:130;background:rgba(0,0,0,.42);animation:mm-fade .18s ease}
 .mm-dr{position:fixed;top:0;bottom:0;left:0;z-index:131;width:min(300px,84vw);display:flex;flex-direction:column;
   background:var(--panel-solid,#fff);color:var(--ink,#222);box-shadow:8px 0 30px rgba(0,0,0,.25);animation:mm-in .2s ease}
