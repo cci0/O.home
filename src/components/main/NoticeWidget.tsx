@@ -40,6 +40,12 @@ const CSS = `
 .ntc-row .pin{flex-shrink:0;font-size:10px;letter-spacing:.06em;padding:1px 7px;border-radius:999px;background:var(--accent,#a63a45);color:#fff;line-height:1.6}
 .ntc-row .pin.tag{background:transparent;color:var(--accent,#a63a45);box-shadow:inset 0 0 0 1px var(--accent,#a63a45);max-width:7em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ntc-row .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:calc(12.5px*var(--fs,1))}
+/* 크기를 정한 위젯 — 제목줄은 고정, 목록만 스크롤 (예전엔 위젯 전체가 스크롤돼 제목줄까지 올라갔다) */
+.wgt.sized > .widget.ntc-panel{display:flex;flex-direction:column;overflow:hidden}
+.ntc-panel > h4{flex-shrink:0}
+.ntc-list{min-height:0}
+.wgt.sized > .widget.ntc-panel .ntc-list{flex:1;overflow-y:auto;scrollbar-width:none}
+.wgt.sized > .widget.ntc-panel .ntc-list::-webkit-scrollbar{display:none}
 .ntc-row small{flex-shrink:0;color:var(--faint);font-size:calc(10.5px*var(--fs,1));font-variant-numeric:tabular-nums}
 `;
 
@@ -76,9 +82,10 @@ export function NoticeWidget({ conf }: { conf: WidgetConf }) {
   const fmt = (d: string) => (d ? d.slice(5, 10).replace('-', '.') : '');
 
   return (
-    <div className="panel widget" style={{ margin: 0 }}>
+    <div className="panel widget ntc-panel" style={{ margin: 0 }}>
       <style>{CSS}</style>
       <h4>{title} <span className="more" onClick={e => { e.stopPropagation(); if (!editOn) router.push(boardHref(boardId)); }}>전체 ›</span></h4>
+      <div className="ntc-list">
       {shown.map(p => (
         <div key={p.id} className="ntc-row" onClick={() => { if (!editOn) router.push(`/board/${p.id}`); }}>
           {p.notice ? <span className="pin">공지</span> : tagOf(p) ? <span className="pin tag">{tagOf(p)}</span> : null}
@@ -89,6 +96,7 @@ export function NoticeWidget({ conf }: { conf: WidgetConf }) {
       {shown.length === 0 && (
         <p className="hint">{mode === 'notice' ? `「${board?.name ?? '게시판'}」에 공지${tags.length ? `나 ${tags.map(t => `#${t}`).join(' ')} 태그가 달린` : '로 고정한'} 글이 없습니다` : '글이 없습니다'}</p>
       )}
+      </div>
 
       <Modal open={open} onClose={() => setOpen(false)} small title="NOTICE 위젯"
         desc="게시판 글을 메인에 공지란처럼 띄웁니다 — 「공지」로 고정한 글과 고른 태그(예: 업데이트)가 달린 글만, 또는 최근 글 전부"

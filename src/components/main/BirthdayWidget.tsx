@@ -68,6 +68,11 @@ function useEditEvent(id: string, onOpen: () => void) {
 const CSS = `
 /* 막 추가해 크기를 아직 안 정한 상태(절대배치)에서 내용 폭으로 쪼그라들지 않게 — 크기를 정하면 그 크기를 따른다 */
 .wgt:not(.sized) > .bd-panel{width:260px;max-width:100%}
+.wgt.sized > .widget.bd-panel{display:flex;flex-direction:column;overflow:hidden}
+.bd-panel > h4{flex-shrink:0}
+.bd-list{min-height:0}
+.wgt.sized > .widget.bd-panel .bd-list{flex:1;overflow-y:auto;scrollbar-width:none}
+.wgt.sized > .widget.bd-panel .bd-list::-webkit-scrollbar{display:none}
 .bd-row{display:flex;align-items:center;gap:10px;padding:6px 2px;border-bottom:1px dashed var(--line);cursor:var(--cur-pointer,pointer);min-width:0}
 .bd-row:last-of-type{border-bottom:0}
 .bd-row:hover .nm{text-decoration:underline;text-underline-offset:3px}
@@ -117,6 +122,7 @@ export function BirthdayWidget({ conf }: { conf: WidgetConf }) {
     <div className="panel widget bd-panel" style={{ margin: 0 }}>
       <style>{CSS}</style>
       <h4>{title}</h4>
+      <div className="bd-list">
       {rows.map(({ c, b, n }) => (
         <div key={c.id} className={`bd-row${n === 0 ? ' today' : ''}`} onClick={() => { if (!editOn) router.push(charPath(c)); }}
           title={`${c.name} · ${b.raw}`}>
@@ -128,6 +134,7 @@ export function BirthdayWidget({ conf }: { conf: WidgetConf }) {
       {rows.length === 0 && (
         <p className="hint">{days}일 안에 다가오는 생일이 없어요{isAdmin ? ' — 캐릭터 기본 정보 항목에 「생일」 칸을 넣어 주세요 (예: 3월 14일)' : ''}</p>
       )}
+      </div>
 
       <Modal open={open} onClose={() => setOpen(false)} small title="BIRTHDAY 위젯"
         desc="캐릭터 기본 정보 항목의 「생일」(예: 3월 14일 · 3/14 · 1998-03-14)을 읽어 다가오는 순서로 보여 줘요"

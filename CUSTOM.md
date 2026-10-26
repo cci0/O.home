@@ -643,3 +643,12 @@ AU를 보는 중이면 그 AU에만 저장된다. AU에서 안 고르면(「원�
 | `app/board/[id]/page.tsx` | import · `useSecretPost`(비밀번호 화면) · 비밀글 댓글 나만보기 · 삭제 시 잠긴 내용도 |
 | `app/board/page.tsx` | import · `useRevealSecrets` · `useSecretMigration` · 비밀번호 있는 글은 눌러서 열기 |
 | `app/guest/page.tsx` | import · 비밀 방명록 잠그기 · 목록 채우기 · 옛 글 옮기기 · 답글 나만보기 · 삭제 시 잠긴 내용도 |
+
+## 45. NOTICE · BIRTHDAY 위젯 — 제목줄 고정, 목록만 스크롤
+
+위젯 크기를 정해 두면(편집모드에서 크기 조절) 내용이 넘칠 때 위젯 전체가 스크롤돼 「NOTICE · 전체 ›」 제목줄까지 같이 올라갔다. 이제 제목줄은 그 자리에 있고 아래 목록만 스크롤된다(스크롤바는 예전처럼 숨김). 크기를 안 정한 위젯은 예전과 같다. 배경이 반투명한 테마에서도 글이 제목 뒤로 비치지 않게, 제목을 띄우지 않고 목록 칸만 따로 스크롤하는 방식.
+
+| 파일 | 바꾼 내용 |
+|---|---|
+| `components/main/NoticeWidget.tsx` (포크 파일) | 목록을 `.ntc-list`로 감싸고 크기 정한 위젯에서만 그 칸이 스크롤 |
+| `components/main/BirthdayWidget.tsx` (포크 파일) | 같은 방식 (`.bd-list`) |
