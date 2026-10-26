@@ -689,27 +689,31 @@ AU를 보는 중이면 그 AU에만 저장된다. AU에서 안 고르면(「원�
 | 갤러리 | 같은 갤러리(섹션) · 목록 순서 · 볼 수 있는 것만 |
 | TRPG 캐릭터 · 세계관 | 목록 순서 (세계관은 볼 수 있는 것만) |
 | 커미션 | 한 장짜리라 ↑ ☰만 |
-| 로그 · 자관 · 캐릭터 | 예전 기준 그대로 (모양만 공통 부품으로) |
+| 로그 · 캐릭터 | 예전 기준 그대로 (모양만 공통 부품으로) |
+| 자관 | 떠 있는 버튼 대신 좌상단 「‹ 목록」 버튼 (51번) |
 
 | 파일 | 바꾼 내용 |
 |---|---|
 | `components/ui/DetailNav.tsx` (새 파일) | 공통 버튼 줄 (PC 세로 · 휴대폰 가로 알약) |
 | `components/ui/DetailNavs.tsx` (새 파일) | 게시글·갤러리·TRPG 캐릭터·세계관·커미션용 이전/다음 기준 |
-| `components/trpg/LogNav.tsx` · `components/rels/RelNav.tsx` · `components/chars/CharNav.tsx` (포크 파일) | 기준만 남기고 `DetailNav` 사용 |
+| `components/trpg/LogNav.tsx` · `components/chars/CharNav.tsx` (포크 파일) | 기준만 남기고 `DetailNav` 사용 |
 | `components/trpg/LogBookmarks.tsx` (포크 파일) | 휴대폰 책갈피 창이 알약·BGM 바 위로 |
 | `components/shell/ScrollTop.tsx` (포크 파일) | 새 상세 페이지들에선 따로 ↑를 안 띄움(겹침 방지) |
 | `app/board/[id]` · `app/gallery/[id]` · `app/tchars/[id]` · `app/worlds/[id]` · `app/comm/[id]` 의 `page.tsx` | import 1줄 · 맨 끝에 버튼 1줄 |
 
-## 49. TRPG 로그 목록 — 휴대폰 필터를 목록 위로
+## 49. TRPG 로그 목록 — 휴대폰 필터를 목록 위 칩 줄로
 
-휴대폰에서 자관 필터·태그 필터가 목록 아래로 길게 늘어졌다. 이제 목록 **위**에 두 줄로 끝난다: 「자관 필터 | 칩 칩 칩 →」, 「태그 필터 | 칩 칩 칩 →」 — 옆으로 밀어서 보고, 오른쪽 끝은 흐려져 더 있다는 걸 알려 준다.
-- 휴대폰은 「+N 더 보기」 없이 태그를 모두 한 줄에, 고른 태그는 맨 앞으로(줄도 처음으로 돌아감)
+휴대폰에서 자관 필터·태그 필터 상자가 목록 아래로 길게 늘어졌다. 이제 휴대폰에서는 그 상자를 숨기고, 목록 **위**에 다른 목록(게시판·갤러리·캐릭터 등)의 #태그 필터와 **똑같은 칩 줄**을 둔다.
+- 첫 줄: 자관 (전체 · 자관들 · 단발) — 하나만 고름
+- 둘째 줄: #태그 — 원래 태그 필터 부품(`TagFilter`) 그대로 (여러 개 고르기 · 모두/하나라도 · 선택 해제 · 태그 모아보기)
+- 둘 다 기본은 한 줄, 넘치면 「펼치기 ▾」 / 「접기 ▴」. 접혀 있어도 고른 칩은 앞으로 당겨져 보인다
 - PC는 예전과 똑같다(오른쪽 세로 사이드)
 
 | 파일 | 바꾼 내용 |
 |---|---|
-| `app/trpg/page.tsx` | 필터 묶음을 `.ts-grp`·`.ts-chips`로 감쌈(PC에선 없는 것처럼) · 휴대폰 태그 순서 |
-| `app/globals.css` | `.ts-grp,.ts-chips{display:contents}` · 휴대폰 `.trpg-layout` 아래에 필터 줄 규칙(이 페이지에만) |
+| `components/ui/ChipFilter.tsx` (새 파일) | 하나만 고르는 칩 줄 — 태그 필터와 같은 모양·접기 |
+| `app/trpg/page.tsx` | import 2줄 · 휴대폰일 때 목록 위에 칩 줄 두 개 |
+| `app/globals.css` | 휴대폰 `.trpg-layout > .tagside` 숨김 1줄 |
 
 ## 50. 휴대폰 상단바 닉네임 잘림
 
@@ -718,3 +722,15 @@ AU를 보는 중이면 그 AU에만 저장된다. AU에서 안 고르면(「원�
 | 파일 | 바꾼 내용 |
 |---|---|
 | `components/shell/MobileMenu.tsx` (포크 파일) | 휴대폰 폭에서 `.user-chip` 글자 숨김 |
+
+## 51. 자관 상세 — 떠 있는 버튼 대신 「‹ 목록」 버튼
+
+자관 상세(PC)에서 ↑ ‹ › ☰ 버튼이 오른쪽 끝이 아니라 화면 가운데쯤에 떠 있었다(페이지 안에 효과가 걸린 상자가 있으면 「화면에 고정」이 그 상자 기준이 됨). 자관 페이지는 꾸밈이 많아 떠 있는 버튼이 어울리지 않아서, 사용자 결정으로 **좌상단에 「‹ 목록」 버튼**(EDIT · DELETE와 같은 줄, 방문자에게도 보임)만 두고 떠 있는 버튼은 없앴다. 맨 위로 ↑는 사이트 공통 버튼(ScrollTop)이 내려가면 뜬다.
+- 다른 상세 페이지에서도 같은 일이 없게 공통 버튼 줄(`DetailNav`)은 문서 맨 바깥(body)에 그린다
+
+| 파일 | 바꾼 내용 |
+|---|---|
+| `app/rels/[id]/page.tsx` | `RelNav` 줄·import 제거 · 좌상단 버튼 줄에 「‹ 목록」(모두에게) |
+| `components/rels/RelNav.tsx` | **삭제** (더 안 씀 — 남아 있어도 빌드에는 문제없음) |
+| `components/shell/ScrollTop.tsx` (포크 파일) | 자관 상세에서도 공통 ↑ 버튼이 뜨게 |
+| `components/ui/DetailNav.tsx` (포크 파일) | 버튼 줄을 `createPortal`로 body에 |

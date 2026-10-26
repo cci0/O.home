@@ -1,6 +1,6 @@
 'use client';
 // 상세 페이지 공통 이동 버튼 (포크 기능) — 맨 위로 ↑ · 이전 ‹ · 다음 › · 목록 ☰
-// 로그(LogNav)·자관(RelNav)·캐릭터(CharNav)가 각자 같은 모양을 따로 그리던 것을 한 곳으로 모았고,
+// 로그(LogNav)·캐릭터(CharNav)·(예전) 자관이 각자 같은 모양을 따로 그리던 것을 한 곳으로 모았고,
 // 게시글·갤러리·TRPG 캐릭터·세계관·커미션 상세에도 같은 버튼을 단다.
 //   · 이전/다음 = 그 목록에서 바로 위/아래 항목 (목록에 보이는 순서 그대로) · 끝이면 흐리게
 //   · 버튼에 마우스를 올리면 「이전 글 · 제목」처럼 어디로 가는지 보인다
@@ -9,6 +9,7 @@
 //     BGM 바가 있으면 그 위로 올라가고, 본문 맨 끝이 버튼에 가리지 않게 아래에 빈 자리를 둔다
 // 새 파일로 따로 둔 이유: 원작 저장소가 업데이트돼도 충돌하지 않게.
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 
 export type NavItem = { href: string; title: string };
@@ -61,6 +62,10 @@ export function DetailNav({ noun, prev, next, listHref, listLabel, pager = true,
 }) {
   const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
+  // 버튼 줄은 문서 맨 바깥(body)에 그린다 — 자관 상세처럼 페이지 안에 transform·filter가 걸린 상자가 있으면
+  // position:fixed가 화면이 아니라 그 상자 기준이 돼서 버튼이 화면 가운데쯤에 떠 있었다 (사용자 제보)
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  useEffect(() => { setHost(document.body); }, []);
 
   // 스크롤은 페이지 전체가 아니라 #appMain 안에서 일어난다
   useEffect(() => {
@@ -80,7 +85,7 @@ export function DetailNav({ noun, prev, next, listHref, listLabel, pager = true,
       <style>{CSS}</style>
       {/* 휴대폰에서 본문 맨 끝(수정·삭제 버튼 등)이 알약에 가리지 않게 */}
       <div className="dnav-sp" aria-hidden />
-      <nav className="dnav" aria-label={`${noun} 이동`}>
+      {host && createPortal(<nav className="dnav" aria-label={`${noun} 이동`}>
         {extra}
         {scrolled && <button type="button" className="dnav-b" onClick={top} title="맨 위로" aria-label="맨 위로">{Ico.up}</button>}
         {pager && <>
@@ -90,7 +95,7 @@ export function DetailNav({ noun, prev, next, listHref, listLabel, pager = true,
             aria-label={`다음 ${noun}`} onClick={() => next && router.push(next.href)}>{Ico.next}</button>
         </>}
         <button type="button" className="dnav-b" onClick={() => router.push(listHref)} title={lst} aria-label={lst}>{Ico.list}</button>
-      </nav>
+      </nav>, host)}
     </>
   );
 }

@@ -4,7 +4,6 @@
 // 관리자: 멤버 추가(내/상대 캐릭터) · 타임라인 항목 추가 · 질문 추가
 import { TagList } from '@/components/ui/TagList';
 import { RelDdayChips } from '@/components/rels/RelDday';
-import { RelNav } from '@/components/rels/RelNav';
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
@@ -854,9 +853,11 @@ export default function RelDetailPage() {
         </div>
       )}
 
-      {/* 관리자 액션 (좌상단) */}
+      {/* 관리자 액션 (좌상단) — 포크: 목록 버튼은 모두에게 (떠 있는 ‹ › 버튼 대신, 사용자 결정) */}
+      <div className="rel-admin-actions">
+        <button className="btn btn-dark" style={{ height: 30, padding: '0 13px', fontSize: 11 }} onClick={() => router.push('/rels')}>‹ 목록</button>
       {isAdmin && (
-        <div className="rel-admin-actions">
+        <>
           {/* AU 선택 중이면 그 AU의 일러·캐치프레이즈를 편집 (v1.9) */}
           <button className="btn btn-dark" style={{ height: 30, padding: '0 13px', fontSize: 11 }}
             onClick={() => router.push(`/rels/${rel.id}/edit${isBaseAu ? '' : `?au=${au!.id}`}`)}>
@@ -869,8 +870,9 @@ export default function RelDetailPage() {
             onClick={() => (isBaseAu ? setDelAsk(true) : setAuDelAsk(au!.id))}>
             {isBaseAu ? 'DELETE' : `DELETE ${au!.label}`}
           </button>
-        </div>
+        </>
       )}
+      </div>
 
       {/* AU 하나만 삭제 (v2.0 사용자 발견) — 자관 삭제와 확실히 구분되게 무엇이 남는지까지 적는다 */}
       <ConfirmModal open={auDelAsk !== null}
@@ -1680,8 +1682,6 @@ export default function RelDetailPage() {
           onApply={c => saveFaceCrop(faceEdit.charId, c)} />
       )}
 
-      {/* 떠 있는 이동 버튼 — 맨 위로 · 이전/다음 자관 · 목록 (포크) */}
-      <RelNav rels={rels} cur={rel} />
 
       {/* 삭제 확인 — DOM 마지막에 렌더해 다른 모달(AU 관리 등) 위에 뜨게 */}
       {del.element}

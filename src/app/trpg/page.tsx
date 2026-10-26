@@ -27,6 +27,8 @@ import { useMainStore } from '@/lib/mainStore';
 import { mergeOrder } from '@/lib/cardSort';
 import { DragList } from '@/components/ui/DragList';
 import { OrderMenu, orderNoOf, moveToOrder } from '@/components/ui/OrderMenu';
+import { TagFilter } from '@/components/ui/TagFilter';   // 포크: 휴대폰 필터를 목록 위 칩 줄로
+import { ChipFilter } from '@/components/ui/ChipFilter';
 
 function TrpgPageInner() {
   const router = useRouter();
@@ -294,6 +296,15 @@ function TrpgPageInner() {
       </div>
       <div className="trpg-layout">
         <div>
+          {/* 포크: 휴대폰에서는 오른쪽 필터 상자(아래로 길게 늘어지던 것) 대신, 다른 목록의 태그 필터와 같은
+              「한 줄 + 펼치기」 칩 줄을 목록 위에 — 자관 줄 · 태그 줄 */}
+          {isMobile && <>
+            <ChipFilter storeKey="ohome.relrow.open" value={filter} onChange={setFilter}
+              items={[{ id: 'all', label: '전체', count: logs.length },
+                ...rels.filter(r => counts[r.id]).map(r => ({ id: r.id, label: r.name, count: counts[r.id] })),
+                ...(counts['none'] > 0 ? [{ id: 'none', label: '단발', count: counts['none'] }] : [])]} />
+            <TagFilter counts={tagList} selected={tagFilter} onToggle={toggleTag} onClear={clearTags} mode={tagMode} onToggleMode={toggleMode} />
+          </>}
           {ticketView
             ? (
               // 다른 목록형 페이지와 같은 DragList — 손잡이를 들어 부드럽게 밀어내고 놓으면 안착 (v2.0)
@@ -349,11 +360,9 @@ function TrpgPageInner() {
               onApply={applyOrder} onClose={() => setOrdFor(null)} />
           )}
         </div>
-        {/* 자관 연동 필터 (v1.2)
-            포크: 휴대폰에서는 목록 위로 올려 「이름 + 옆으로 미는 칩 한 줄」씩으로 접는다 (ts-grp·ts-chips — PC에서는 없는 것처럼).
-            휴대폰은 「더 보기」 없이 태그를 모두 한 줄에 — 고른 태그는 맨 앞으로 */}
+        {/* 자관 연동 필터 (v1.2) */}
         <div className="panel tagside">
-          <div className="ts-grp"><h4>자관 필터</h4><div className="ts-chips">
+          <h4>자관 필터</h4>
           <div className={`tag ${filter === 'all' ? 'on' : ''}`} onClick={() => setFilter('all')}>
             전체 <small>{logs.length}</small>
           </div>
@@ -367,27 +376,24 @@ function TrpgPageInner() {
               단발 <small>{counts['none']}</small>
             </div>
           )}
-          </div></div>
           {/* 자유 태그 필터 — 여러 개를 고르면 모두 달린 로그만 */}
           {tagList.length > 0 && (
-            <div className="ts-grp">
+            <>
               <h4 style={{ marginTop: 18 }}>태그 필터</h4>
-              {/* 휴대폰: 태그를 고르면 줄을 처음으로 되돌려, 앞으로 온 고른 태그가 바로 보이게 (key가 바뀌면 새로 그림) */}
-              <div className="ts-chips" key={isMobile ? tagFilter.join('|') : 'pc'}>
               {tagFilter.length > 0 && (
                 <div className="tag" onClick={clearTags}>선택 해제 ✕</div>
               )}
               {tagFilter.length > 1 && (
                 <div className="tag" onClick={toggleMode}>{tagMode === 'or' ? '하나라도 포함' : '모두 포함'} ⇄</div>
               )}
-              {(isMobile ? [...tagList].sort((a, b) => +tagFilter.includes(b[0]) - +tagFilter.includes(a[0])) : tagFold.shown).map(([t, n]) => (
+              {tagFold.shown.map(([t, n]) => (
                 <div key={t} className={`tag ${tagFilter.includes(t) ? 'on' : ''}`} style={tagChip(tagColors, t, tagFilter.includes(t))} onClick={() => toggleTag(t)}>
                   #{t} <small>{n}</small>
                 </div>
               ))}
-              {!isMobile && tagFold.hidden > 0 && <div className="tag" onClick={() => setTagOpen(true)}>+{tagFold.hidden} 더 보기</div>}
-              {!isMobile && tagOpen && tagList.length > TAG_FOLD_LIMIT && <div className="tag" onClick={() => setTagOpen(false)}>접기 ▴</div>}
-            </div></div>
+              {tagFold.hidden > 0 && <div className="tag" onClick={() => setTagOpen(true)}>+{tagFold.hidden} 더 보기</div>}
+              {tagOpen && tagList.length > TAG_FOLD_LIMIT && <div className="tag" onClick={() => setTagOpen(false)}>접기 ▴</div>}
+            </>
           )}
           {/* 모바일은 항상 기본형 — 스킨 선택 숨김 (v1.9) */}
           {!isMobile && (
