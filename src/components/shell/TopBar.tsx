@@ -20,6 +20,7 @@ import {
   readNotifs, markRead, markAllRead, clearReadNotifs, notifSettings, setNotifSetting, syncNotifs, selfTestNotif,
 } from '@/lib/notifStore';
 import { subscribeTable } from '@/lib/db';
+import { MobileMenuButton } from './MobileMenu';   // 포크: 휴대폰 햄버거 메뉴
 
 const BellIcon = () => (
   <svg viewBox="0 0 24 24">
@@ -147,6 +148,8 @@ export function TopBar() {
 
   return (
     <header className="topbar">
+      {/* 휴대폰 햄버거 메뉴 (포크 — components/shell/MobileMenu) */}
+      <MobileMenuButton />
       {/* 로고 — 텍스트·서브타이틀·정렬은 환경설정 > 디자인 (5.2) */}
       <div className="brand" onClick={() => nav('/')}>
         {siteLoaded && site.title}

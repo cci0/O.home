@@ -48,8 +48,15 @@ async function rpc<T>(fn: string, args: Record<string, unknown>): Promise<T> {
   return data as T;
 }
 
+// 관리자·작성자 목록용 기억 (30초) — 게시판 목록을 다시 열 때마다 서버에 다시 묻지 않게.
+// 잠그기·지우기를 하면 바로 버린다.
+const MINE_TTL = 30_000;
+let mineCache: { key: string; at: number; p: Promise<Map<string, Record<string, unknown>>> } | null = null;
+const forgetMine = () => { mineCache = null; };
+
 /** 잠그기 — pass: null이면 비밀번호 그대로 · ''이면 없앰 · 그 밖은 새 비밀번호 */
 export async function saveSecret(coll: SecretColl, id: string, payload: Record<string, unknown>, pass: string | null, authorId: string | null) {
+  forgetMine();
   await rpc('secret_save', { p_id: id, p_coll: coll, p_payload: payload, p_pass: pass, p_author: authorId || null });
 }
 /** 꺼내기 — 볼 수 없으면 null */
@@ -59,11 +66,17 @@ export async function readSecret(id: string, pass?: string): Promise<Record<stri
 /** 내가(관리자·작성자) 볼 수 있는 것 한꺼번에 */
 export async function readMine(ids: string[]): Promise<Map<string, Record<string, unknown>>> {
   if (!ids.length) return new Map();
-  const rows = await rpc<{ id: string; payload: Record<string, unknown> }[]>('secret_read_mine', { p_ids: ids });
-  return new Map((rows ?? []).map(r => [r.id, r.payload]));
+  const key = [...ids].sort().join(',');
+  if (mineCache && mineCache.key === key && Date.now() - mineCache.at < MINE_TTL) return mineCache.p;
+  const p = rpc<{ id: string; payload: Record<string, unknown> }[]>('secret_read_mine', { p_ids: ids })
+    .then(rows => new Map((rows ?? []).map(r => [r.id, r.payload] as [string, Record<string, unknown>])));
+  mineCache = { key, at: Date.now(), p };
+  p.catch(() => { if (mineCache?.p === p) mineCache = null; });
+  return p;
 }
 export async function deleteSecret(id: string) {
   if (!secretOn()) return;
+  forgetMine();
   try { await rpc('secret_delete', { p_id: id }); } catch { /* 없으면 그만 */ }
 }
 
