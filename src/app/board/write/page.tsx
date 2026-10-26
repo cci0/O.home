@@ -14,6 +14,9 @@ import { ConfirmModal } from '@/components/ui/Modal';
 import { RichEditor } from '@/components/ui/RichEditor';
 import { useToast } from '@/components/ui/Toast';
 import { PageTitle, EditableDesc } from '@/components/ui/PageText';
+import { sealRow, readSecret, deleteSecret, secretOn } from '@/lib/secretPosts';   // 포크: 비밀글 잠금
+
+type SealedPost = Post & { sealed?: boolean; secretPass?: boolean };
 
 /** 에디터가 다루지 못해 정리될 만한 태그·속성이 있는가 — 전환 경고 판단 (인트로와 같은 기준) */
 const hasRichHtml = (html: string) =>
@@ -42,6 +45,9 @@ function WriteInner() {
   React.useEffect(() => { if (!category && board.cats[0]) setCategory(board.cats[0].label); // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [board.cats.length]);
   const [secret, setSecret] = useState(false);
+  const [secretPw, setSecretPw] = useState('');   // 포크: 열람 비밀번호 (비우면 관리자·작성자만)
+  const [dropPw, setDropPw] = useState(false);    // 포크: 수정할 때 비밀번호 없애기
+  const sealedExtra = useRef<Record<string, unknown> | null>(null);   // 포크: 잠긴 글에서 꺼낸 내용 (옛 댓글 보존용)
   const [notice, setNotice] = useState(false);
   // 태그 (v2.0 사용자 요청) — 쉼표로 구분해 입력, 저장할 때 배열로
   const [tagsText, setTagsText] = useState('');
@@ -81,6 +87,17 @@ function WriteInner() {
     setFoldType(p.fold?.type ?? 'none'); setFoldLabel(p.fold?.label ?? '');
     setTagsText((p.tags ?? []).join(', '));
     setThumbSrc(p.thumbSrc); setThumbCrop(p.thumbCrop);
+    // 포크: 잠긴 비밀글이면 진짜 내용을 서버에서 꺼내 채운다 (관리자·작성자만 꺼내진다)
+    if (p.secret && (p as SealedPost).sealed) {
+      void readSecret(p.id).then(sx => {
+        if (!sx) return;
+        sealedExtra.current = sx;
+        const q = { ...p, ...sx } as Post;
+        setTitle(q.title); setBody(q.body); setTagsText((q.tags ?? []).join(', '));
+        setFoldType(q.fold?.type ?? 'none'); setFoldLabel(q.fold?.label ?? '');
+        setThumbSrc(q.thumbSrc); setThumbCrop(q.thumbCrop);
+      }).catch(() => toast('비밀글 내용을 불러오지 못했어요'));
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editPid, postsLoaded, posts]);
 
@@ -94,22 +111,31 @@ function WriteInner() {
     );
   }
 
-  const post = () => {
+  const post = async () => {
     if (!title.trim() || !body.trim()) { toast('제목과 내용을 입력해 주세요'); return; }
     if (editing) {
       // 수정 — 작성자 본인만 (관리자도 타인 글은 삭제만, v1.9). 작성자/날짜/댓글/소속 게시판은 유지
       if (editing.authorId !== user.id) { toast('수정은 작성자 본인만 할 수 있습니다'); return; }
-      setPosts(posts.map(p => (p.id === editing.id ? {
-        ...p,
+      const next: SealedPost = {
+        ...editing,
+        ...(sealedExtra.current?.comments ? { comments: sealedExtra.current.comments as Post['comments'] } : {}),
         title: title.trim(), body,
         mode: writeMode === 'md' ? 'md' : 'html',
         authored: writeMode === 'editor' ? 'editor' : undefined,
         category,
-        secret, notice: isAdmin ? notice : p.notice,
+        secret, notice: isAdmin ? notice : editing.notice,
         tags: parseTags(tagsText),
         fold: foldType === 'none' ? null : { type: foldType, label: foldType === 'custom' ? foldLabel : undefined },
         thumbSrc, thumbCrop,
-      } : p)));
+      };
+      // 포크: 비밀글이면 내용을 잠긴 표로 · 비밀글을 풀면 잠긴 내용을 지운다
+      let row: SealedPost = next;
+      try {
+        const was = editing as SealedPost;
+        if (secret) row = await sealRow('posts', next, dropPw ? '' : (secretPw.trim() || null), !!was.secretPass);
+        else if (was.sealed) { await deleteSecret(editing.id); row = { ...next, sealed: false, secretPass: false }; }
+      } catch { toast('비밀글을 저장하지 못했어요 — Supabase에 secret_posts.sql을 실행했는지 확인해 주세요'); return; }
+      setPosts(posts.map(p => (p.id === editing.id ? row : p)));
       toast('수정되었습니다');
       router.push(`/board/${editing.id}`);
       return;
@@ -125,7 +151,11 @@ function WriteInner() {
       boardId: board.id,   // 소속 게시판 (5.2 다중 게시판)
       thumbSrc, thumbCrop,
     };
-    setPosts([p, ...posts]);
+    // 포크: 비밀글이면 내용을 잠긴 표로 보내고 「비밀글」 자리만 남긴다
+    let row: Post = p;
+    try { if (secret) row = await sealRow('posts', p, secretPw.trim(), false); }
+    catch { toast('비밀글을 저장하지 못했어요 — Supabase에 secret_posts.sql을 실행했는지 확인해 주세요'); return; }
+    setPosts([row, ...posts]);
     toast('등록되었습니다');
     router.push(`/board/${p.id}`);
   };
@@ -222,7 +252,18 @@ function WriteInner() {
               <TagInput value={tagsText} onChange={setTagsText} />
             </div>
             <div style={{ display: 'grid', gap: 9 }}>
-              <KCheck label="비밀글 (관리자와 나만 열람)" checked={secret} onChange={setSecret} />
+              <KCheck label={secretOn() ? '비밀글' : '비밀글 (관리자와 나만 열람)'} checked={secret} onChange={setSecret} />
+              {/* 포크: 열람 비밀번호 — 비우면 관리자·작성자만 */}
+              {secret && secretOn() && (
+                <div style={{ display: 'grid', gap: 6, paddingLeft: 26 }}>
+                  <KInput type="password" autoComplete="new-password" value={secretPw}
+                    onChange={e => { setSecretPw(e.target.value); setDropPw(false); }}
+                    placeholder={(editing as SealedPost | undefined)?.secretPass ? '비밀번호 — 그대로 두려면 비워 두세요' : '열람 비밀번호 — 비우면 관리자·작성자만'} />
+                  {(editing as SealedPost | undefined)?.secretPass && (
+                    <KCheck label="비밀번호 없애기 (관리자·작성자만 열람)" checked={dropPw} onChange={setDropPw} />
+                  )}
+                </div>
+              )}
               {isAdmin && <KCheck label="공지로 고정" checked={notice} onChange={setNotice} />}
             </div>
           </div>

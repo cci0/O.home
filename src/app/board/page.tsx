@@ -17,6 +17,7 @@ import {
 import { SearchBar, Pager } from '@/components/ui/Kit';
 import { CropImg } from '@/components/ui/CropEditor';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
+import { useRevealSecrets, useSecretMigration } from '@/lib/secretPosts';   // 포크: 비밀글 잠금
 
 const PER_PAGE = 10;
 
@@ -35,11 +36,15 @@ function BoardInner() {
   const bid = params.get('b') ?? MAIN_BOARD_ID;
   const { boards, loaded: boardsLoaded } = useBoards();
   const board = boards.find(b => b.id === bid) ?? boards[0];
-  const [posts] = useLocalList<Post>('ohome.board.v1', BOARD_SEED);
+  const [rawPosts, setRawPosts, postsLoaded] = useLocalList<Post>('ohome.board.v1', BOARD_SEED);
+  // 포크: 잠긴 비밀글 — 관리자·작성자에게는 진짜 제목 등을 채워서 (다른 사람에게는 「비밀글」 자리만)
+  const posts = useRevealSecrets(rawPosts, p => isAdmin || (!!p.authorId && p.authorId === user?.id));
   const [tagSel, toggleTag, clearTags, tagMode, toggleMode] = useTagFilter();   // 자유 태그 필터
   const [tagColors] = useTagColors();
   // 댓글 수 — 댓글은 글과 따로 저장된다 (v2.0). 옛 글 안에 남아 있던 것도 함께 센다
-  const [cmtRows] = useLocalList<CommentRow>(COMMENT_KEY, COMMENT_SEED);
+  const [cmtRows, setCmtRows, cmtLoaded] = useLocalList<CommentRow>(COMMENT_KEY, COMMENT_SEED);
+  // 포크: 예전 비밀글을 잠긴 표로 한 번 옮긴다 (관리자가 열 때)
+  useSecretMigration('posts', isAdmin, postsLoaded && cmtLoaded, rawPosts, setRawPosts, cmtRows, setCmtRows, 'post');
   const cmtCount = (p: Post) => commentsFor(cmtRows, 'post', p.id, p.comments).length;
   const { st: boardSet } = useBoardSettings();   // 시스템 뱃지 색 (환경설정 > 게시판 관리)
   const [cat, setCat] = useState('전체');
@@ -76,6 +81,8 @@ function BoardInner() {
   /* 비밀글 열람 (v2.0 발견) — authorId 없는 비밀글은 비로그인 방문자에게도 열렸다.
      둘 다 undefined라 `undefined === undefined`가 참이었기 때문 */
   const canRead = (p: Post) => !p.secret || isAdmin || (!!p.authorId && p.authorId === user?.id);
+  // 포크: 열람 비밀번호가 있는 비밀글은 누구나 눌러서 비밀번호 화면으로 갈 수 있다
+  const canOpen = (p: Post) => canRead(p) || !!(p as Post & { secretPass?: boolean }).secretPass;
 
   if (!boardsLoaded) return <section className="page" />;
 
@@ -115,7 +122,7 @@ function BoardInner() {
             // 대표 이미지(직접 선택 + 크롭) 우선, 없으면 본문 첫 이미지 (v1.9)
             const thumb = canRead(p) ? (p.thumbSrc ?? firstImage(p.body)) : null;
             return (
-              <div className="bticket" key={p.id} onClick={() => { if (canRead(p)) router.push(`/board/${p.id}`); }}>
+              <div className="bticket" key={p.id} onClick={() => { if (canOpen(p)) router.push(`/board/${p.id}`); }}>
                 <div className="bt-thumb">
                   {thumb
                     ? <CropImg src={thumb} crop={p.thumbSrc ? p.thumbCrop : undefined} />
@@ -143,7 +150,7 @@ function BoardInner() {
         /* 기본형 스킨 — 리스트 행 (글씨색은 게시판 관리에서 지정 가능, v1.9) */
         <div className="panel board-list flush" style={board.fg ? { color: board.fg } : undefined}>
           {pageList.map(p => (
-            <div className="brow" key={p.id} onClick={() => { if (canRead(p)) router.push(`/board/${p.id}`); }}>
+            <div className="brow" key={p.id} onClick={() => { if (canOpen(p)) router.push(`/board/${p.id}`); }}>
               <span className="cat">{postBadge(p)}</span>
               {/* 제목 칸 안에서 태그를 오른쪽 끝(=작성자 바로 왼쪽)에 정렬 (v2.0 사용자 요청) —
                   칸을 따로 만들면 행마다 그리드가 독립이라 작성자 열이 태그 길이만큼 어긋난다 */}

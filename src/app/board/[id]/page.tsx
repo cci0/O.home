@@ -17,6 +17,7 @@ import { GuestIdBar } from '@/components/ui/GuestId';
 import { useToast } from '@/components/ui/Toast';
 import { PageTitle } from '@/components/ui/PageText';
 import { pushNotif } from '@/lib/notifStore';
+import { useSecretPost, deleteSecret, privateIfSecret } from '@/lib/secretPosts';   // 포크: 비밀글 잠금
 
 const FOLD_LABEL = { spoiler: '스포일러 주의', adult: '수위 주의' };
 
@@ -36,7 +37,8 @@ export default function BoardDetailPage() {
   const [delAsk, setDelAsk] = useState(false);
   const [gName, setGName] = useState('');                       // 게스트 닉네임 (방문자 댓글 허용 시)
 
-  const post = posts.find(p => p.id === id);
+  // 포크: 잠긴 비밀글은 볼 수 있는 사람(관리자·작성자·비밀번호)에게만 내용을 채워 준다 — 못 보면 gate를 그린다
+  const { post, gate: secretGate } = useSecretPost(posts.find(p => p.id === id), isAdmin, user?.id);
   /* 이 글이 속한 곳이 비공개면 주소로 들어와도 열리지 않게 (v2.0 사용자 요청).
      글 주소에는 섹션이 없어 MenuGuard가 못 막는다 — 글을 읽어 소속을 알아낸 여기서 판정한다.
      **다른 early return보다 먼저 불러야 한다**(훅이므로 렌더마다 개수가 같아야 한다) */
@@ -58,13 +60,8 @@ export default function BoardDetailPage() {
   /* 글쓴이인지 한 곳에서 정한다 (v2.0 발견) — 예전 글이나 손님이 쓴 글은 authorId가 없고
      비로그인 방문자도 user?.id가 없어, 서로 「같다」고 판정돼 **비밀글이 그대로 열렸다.** */
   const isAuthor = !!post.authorId && post.authorId === user?.id;
-  if (post.secret && !isAdmin && !isAuthor) {
-    return (
-      <section className="page">
-        <div className="page-head"><PageTitle>BOARD</PageTitle><p>비밀글 — 작성자와 관리자만 열람할 수 있습니다</p></div>
-      </section>
-    );
-  }
+  // 비밀글 — 볼 수 없으면 안내·비밀번호 입력 화면 (포크: lib/secretPosts)
+  if (secretGate) return secretGate;
 
   const board = boards.find(b => b.id === (post.boardId ?? MAIN_BOARD_ID)) ?? boards[0];
   const boardTitle = board.id === MAIN_BOARD_ID ? 'BOARD' : board.name;
@@ -88,7 +85,7 @@ export default function BoardDetailPage() {
     const c: CommentRow = user
       ? { ...base, target: 'post', targetId: post.id, author: user.nickname, authorId: user.id }
       : { ...base, target: 'post', targetId: post.id, author: gName.trim(), authorId: '' };
-    setCmtRows([...cmtRows, c]);
+    setCmtRows([...cmtRows, privateIfSecret(c, post.secret)]);   // 포크: 비밀글 댓글은 나만보기로
     /* 알림 (v2.0 포크 제보 — 「댓글을 달아도 알림이 안 와요」): 게시판 댓글은 여태 알림을
        **만들지도 않았다** (로드비·방명록·역극만 있었다). 글쓴이에게, 답글이면 그 댓글 주인에게도. */
     const me = user?.id ?? '';
@@ -231,6 +228,7 @@ export default function BoardDetailPage() {
         buttons={[
           { label: 'DELETE', kind: 'accent', onClick: () => {
             setPosts(posts.filter(p => p.id !== post.id));
+            void deleteSecret(post.id);   // 포크: 잠긴 내용도 함께
             // 글에 딸린 댓글도 함께 지운다 — 따로 저장되므로 남겨 두면 주인 없는 줄이 된다 (v2.0)
             setCmtRows(cmtRows.filter(c => !(c.target === 'post' && c.targetId === post.id)));
             router.push(boardHref(board.id));

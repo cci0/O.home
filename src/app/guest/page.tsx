@@ -12,16 +12,21 @@ import { Modal, useConfirmDelete } from '@/components/ui/Modal';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 import { useToast } from '@/components/ui/Toast';
 import { pushNotif, notifyAdmins } from '@/lib/notifStore';
+import { sealRow, useRevealSecrets, useSecretMigration, privateIfSecret, deleteSecret } from '@/lib/secretPosts';   // 포크: 비밀글 잠금
 
 export default function GuestbookPage() {
   const { user, isAdmin } = useAuth();
   const toast = useToast();
-  const [entries, setEntries] = useLocalList<GuestEntry>('ohome.guest.v1', GUEST_SEED);
+  const [rawEntries, setEntries, entriesLoaded] = useLocalList<GuestEntry>('ohome.guest.v1', GUEST_SEED);
+  // 포크: 잠긴 비밀글 — 관리자·(회원이 쓴 경우) 그 회원에게만 진짜 내용을 채워서
+  const entries = useRevealSecrets(rawEntries, e => isAdmin || (!!e.authorId && e.authorId === user?.id));
   /* 답글은 글과 따로 저장 (v2.0 포크 제보 — 「관리자 외에는 답글이 안 달려요」).
      예전에는 답글이 방명록 글 **안에** 들어 있어 남의 글을 UPDATE 해야 했고, 서버는 그걸
      글쓴이·관리자에게만 허용한다 — 그래서 관리자 답글 전용이 됐다. 댓글과 같은 자기 문서로
      저장하면 로그인 회원도, 비로그인 손님도 자기 권한으로 답글을 남길 수 있다. */
-  const [cmtRows, setCmtRows] = useLocalList<CommentRow>(COMMENT_KEY, COMMENT_SEED);
+  const [cmtRows, setCmtRows, cmtLoaded] = useLocalList<CommentRow>(COMMENT_KEY, COMMENT_SEED);
+  // 포크: 예전 비밀글을 잠긴 표로 한 번 옮긴다 (관리자가 열 때)
+  useSecretMigration('guestbook', isAdmin, entriesLoaded && cmtLoaded, rawEntries, setEntries, cmtRows, setCmtRows, 'guest');
   const [body, setBody] = useState('');
   const [secret, setSecret] = useState(false);
   const [gName, setGName] = useState('');
@@ -32,7 +37,7 @@ export default function GuestbookPage() {
   const [delFor, setDelFor] = useState<string | null>(null);
   const del = useConfirmDelete();                   // 답글 삭제 확인
 
-  const leave = () => {
+  const leave = async () => {
     if (!body.trim()) { toast('내용을 입력해 주세요'); return; }
     if (!user && !gName.trim()) { toast('닉네임을 입력해 주세요'); return; }
     const e: GuestEntry = {
@@ -46,7 +51,11 @@ export default function GuestbookPage() {
        「수정」으로 본다. 수정은 로그인한 사람만 할 수 있으므로 **비로그인 방문자는
        방명록이 비어 있을 때만 글을 남길 수 있었다.** 댓글은 원래 뒤에 붙여서 멀쩡했다.
        화면에서는 아래 visible이 날짜 내림차순으로 정렬하므로 새 글이 여전히 맨 위에 온다. */
-    setEntries([...entries, e]);
+    // 포크: 비밀글이면 내용을 잠긴 표로 보내고 「비밀글」 자리만 남긴다
+    let row: GuestEntry = e;
+    try { row = await sealRow('guestbook', e, '', false); }
+    catch { toast('방명록을 저장하지 못했어요 — 잠시 뒤 다시 시도해 주세요'); return; }
+    setEntries([...rawEntries, row]);
     setBody(''); setSecret(false); setGName('');
     toast('방명록이 등록되었습니다');
     // 알림 (4.13) — 관리자에게 (본인 제외는 notifyAdmins가 건다).
@@ -66,7 +75,8 @@ export default function GuestbookPage() {
     // 손님 글은 관리자만 지운다 (v2.0 사용자 확정) — 서버가 그렇게밖에 못 받는다
     const allowed = isAdmin || (!!e.authorId && e.authorId === user?.id);
     if (!allowed) { toast('삭제 권한이 없습니다'); return; }
-    setEntries(entries.filter(x => x.id !== delFor));
+    setEntries(rawEntries.filter(x => x.id !== delFor));
+    if (e.secret) void deleteSecret(e.id);   // 포크: 잠긴 내용도 함께
     // 딸린 답글도 함께 지운다 — 따로 저장되므로 남겨 두면 주인 없는 줄이 된다 (v2.0)
     setCmtRows(cmtRows.filter(c => !(c.target === 'guest' && c.targetId === e.id)));
     setDelFor(null);
@@ -83,7 +93,7 @@ export default function GuestbookPage() {
       text: replyText.trim(), date: new Date().toISOString(),
       author: user ? user.nickname : replyName.trim(), authorId: user?.id ?? '',
     };
-    setCmtRows([...cmtRows, c]);
+    setCmtRows([...cmtRows, privateIfSecret(c, target.secret)]);   // 포크: 비밀글 답글은 나만보기로
     setReplyFor(null); setReplyText('');
     // 알림 (4.13) — 회원이 쓴 방명록이면 그 회원에게 (본인 답글 제외)
     const me = user?.id ?? '';
