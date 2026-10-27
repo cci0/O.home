@@ -78,7 +78,9 @@ function CharDetailInner() {
   const eff = ch ? charWithAu(ch, auKey) : undefined;
   const detailTags = useStripOc(eff?.tags);   // 포크: OC 구분 태그는 태그 목록에서 빼고 OC 표시로
 
-  /** 상세 화면 아트 위치 저장 (v2.0) — AU를 보는 중이면 그 AU에만, 아니면 원본에 */
+  /** 상세 화면 아트 위치 저장 (v2.0) — AU를 보는 중이면 그 AU에만, 아니면 원본에
+   *  포크: 어느 그림에 잡은 위치인지(ref)와 그때 칸 비율(r)을 함께 저장 — 대표 그림을 바꿔 올리면 예전 위치는 안 쓰고,
+   *  상세 배치·창 높이가 바뀌어도 같은 곳이 가운데 오게 (CropEditor fitCrop) */
   const saveArtCrop = (c: CropValue | undefined) => {
     setChars(chars.map(x => {
       if (x.id !== id) return x;
@@ -247,7 +249,7 @@ function CharDetailInner() {
               {/* 리스트 썸네일 크롭은 3:4 기준이라 여기(화면 높이에 따라 비율이 달라지는 영역)에는
                   맞지 않는다 — 여기서 따로 잡은 값이 있을 때만 쓰고, 없으면 가운데 기준 (v2.0) */}
               <CroppedBlobImg fileRef={arts[cur] ?? eff.artUrl}
-                crop={cur === 0 ? eff.artCrop : undefined}
+                crop={cur === 0 && (!eff.artCrop?.ref || eff.artCrop.ref === arts[0]) ? eff.artCrop : undefined}
                 ph={ch.thumbClass} label="CHARACTER FULL ART" />
               {arts.length > 1 && (
                 <div style={{ position: 'absolute', left: 0, right: 0, bottom: 12, display: 'flex', justifyContent: 'center', gap: 5, zIndex: 3 }}>
@@ -341,9 +343,10 @@ function CharDetailInner() {
         document.body,
       )}
       {artCropOpen && (
-        <ArtCropModal fileRef={artCropOpen.ref} ratio={artCropOpen.ratio} crop={eff?.artCrop}
+        <ArtCropModal fileRef={artCropOpen.ref} ratio={artCropOpen.ratio}
+          crop={eff?.artCrop && (!eff.artCrop.ref || eff.artCrop.ref === artCropOpen.ref) ? eff.artCrop : undefined}
           onClose={() => setArtCropOpen(null)}
-          onApply={c => { saveArtCrop(c); setArtCropOpen(null); }} />
+          onApply={c => { saveArtCrop({ ...c, ref: artCropOpen.ref }); setArtCropOpen(null); }} />
       )}
       {artBig && <ArtLightbox refs={artBig.refs} start={artBig.i} onClose={last => { setArtIdx(last); setArtBig(null); }} />}
       {/* 떠 있는 이동 버튼 — 맨 위로 · 이전/다음 캐릭터 · 목록 (포크) */}

@@ -8,8 +8,32 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Modal } from './Modal';
 import { useBlobUrl } from '@/lib/blobStore';
 
-/** x·y = 프레임 크기 대비 중심 오프셋 비율 (-0.5~0.5 근방), scale = 배율 */
-export interface CropValue { x: number; y: number; scale: number }
+/** x·y = 프레임 크기 대비 중심 오프셋 비율 (-0.5~0.5 근방), scale = 배율
+ *  r (포크) = 잡을 때 프레임의 가로/세로 비 — 표시 칸 비율이 바뀌어도(화면 높이·상세 배치) 같은 곳이 가운데 오게 옮겨 준다
+ *  ref (포크) = 어느 그림에 잡은 위치인지 — 그림을 바꿔 올리면 예전 위치를 쓰지 않게 */
+export interface CropValue { x: number; y: number; scale: number; r?: number; ref?: string }
+
+/** 포크: 저장된 크롭을 지금 프레임 비율(frameR)·원본 비율(natR)에 맞게 다시 계산한다.
+ *  ① 잡을 때 비율(r)과 다르면 — 그때 프레임 가운데에 있던 그림 속 지점이 지금도 가운데 오게 옮기고
+ *  ② 어떤 경우든 그림이 프레임을 다 덮게(빈칸이 안 보이게) 범위 안으로 당긴다.
+ *  예전에는 저장된 숫자를 그대로 써서, 상세 배치를 바꾸거나 창 높이가 달라지면 그림이 엉뚱하게 확대되거나
+ *  한쪽에 빈칸이 생겼다 (사용자 제보) */
+export function fitCrop(c: CropValue | undefined, frameR: number, natR: number): CropValue {
+  const v = c ?? { x: 0, y: 0, scale: 1 };
+  const scale = Math.min(3, Math.max(1, v.scale || 1));
+  // 프레임 대비 그림 표시 크기 (가로·세로)
+  const size = (fr: number) => (natR >= fr ? { w: scale * natR / fr, h: scale } : { w: scale, h: scale * fr / natR });
+  let x = v.x || 0, y = v.y || 0;
+  if (v.r && Math.abs(v.r - frameR) > 0.001) {
+    const s0 = size(v.r);
+    const u = 0.5 - x / s0.w, w = 0.5 - y / s0.h;   // 그때 가운데였던 그림 속 지점 (그림 기준 0~1)
+    const s1 = size(frameR);
+    x = (0.5 - u) * s1.w; y = (0.5 - w) * s1.h;
+  }
+  const s = size(frameR);
+  const maxX = Math.max(0, (s.w - 1) / 2), maxY = Math.max(0, (s.h - 1) / 2);
+  return { ...v, scale, x: Math.min(maxX, Math.max(-maxX, x)), y: Math.min(maxY, Math.max(-maxY, y)), r: frameR };
+}
 export type CropAspect = '3:4' | '4:3' | '16:9' | '1:1';
 
 const RATIO: Record<CropAspect, number> = { '3:4': 3 / 4, '4:3': 4 / 3, '16:9': 16 / 9, '1:1': 1 };
@@ -33,11 +57,15 @@ export function coverImgStyle(crop: CropValue | undefined, wide: boolean): React
 export function CropImg({ src, crop, alt }: { src: string; crop?: CropValue; alt?: string }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const natRef = useRef<{ w: number; h: number } | null>(null);
-  const [wide, setWide] = useState<boolean | null>(null);
+  // 포크: 커버 방향만이 아니라 프레임·원본 비율을 함께 기억 — 크롭을 지금 비율에 맞게 다시 계산한다(fitCrop)
+  const [geo, setGeo] = useState<{ fr: number; nr: number } | null>(null);
   const compute = () => {
     const r = wrapRef.current?.getBoundingClientRect();
     const n = natRef.current;
-    if (r && n && r.width > 1 && r.height > 1) setWide(n.w / n.h >= r.width / r.height);
+    if (r && n && r.width > 1 && r.height > 1 && n.h > 0) {
+      const fr = r.width / r.height, nr = n.w / n.h;
+      setGeo(g => (g && Math.abs(g.fr - fr) < 0.002 && g.nr === nr ? g : { fr, nr }));
+    }
   };
   useEffect(() => {
     compute();
@@ -53,7 +81,7 @@ export function CropImg({ src, crop, alt }: { src: string; crop?: CropValue; alt
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={src} alt={alt ?? ''} draggable={false} decoding="async"
         onLoad={e => { const im = e.currentTarget; natRef.current = { w: im.naturalWidth, h: im.naturalHeight }; compute(); }}
-        style={wide == null ? { opacity: 0 } : coverImgStyle(crop, wide)} />
+        style={geo == null ? { opacity: 0 } : coverImgStyle(fitCrop(crop, geo.fr, geo.nr), geo.nr >= geo.fr)} />
     </div>
   );
 }
@@ -89,6 +117,12 @@ export function CropEditor({ open, src, aspect, aspectLabel, initial, onClose, o
   useEffect(() => {
     if (open) setCrop(initial ?? { x: 0, y: 0, scale: 1 });
   }, [open, initial]);
+  // 포크: 그림 크기를 알게 되면 저장돼 있던 위치를 이 프레임 비율에 맞춘다 — 예전에는 그대로 열어서
+  // 다른 비율에서 잡은 값이면 위쪽 등에 빈칸이 보였다
+  useEffect(() => {
+    if (open && natR != null) setCrop(fitCrop(initial, frameR, natR));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, natR, frameR]);
 
   // 이미지가 항상 프레임을 가득 채우도록 오프셋 클램프 — 빈 공간이 보이는 상태 방지.
   // 커버 크기는 비율만으로 계산 (프레임 픽셀 크기 불필요 — x·y와 같은 fraction 단위)
@@ -143,7 +177,7 @@ export function CropEditor({ open, src, aspect, aspectLabel, initial, onClose, o
       desc={`크롭 비율 ${aspectText} — 드래그로 이동, 슬라이더/휠로 확대 · 원본은 잘리지 않음`}
       actions={<>
         <button className="btn btn-ghost" onClick={onClose}>CANCEL</button>
-        <button className="btn btn-dark" onClick={() => onApply(crop)}>APPLY</button>
+        <button className="btn btn-dark" onClick={() => onApply({ x: crop.x, y: crop.y, scale: crop.scale, r: frameR })}>APPLY</button>
       </>}>
       <div
         ref={frameRef}
@@ -180,7 +214,7 @@ export function CropEditor({ open, src, aspect, aspectLabel, initial, onClose, o
           }} />
         </div>
         <button className="btn btn-ghost" style={{ padding: '5px 11px', fontSize: 11 }}
-          onClick={() => setCrop({ x: 0, y: 0, scale: 1 })}>초기화</button>
+          onClick={() => setCrop({ x: 0, y: 0, scale: 1, r: frameR })}>초기화</button>
       </div>
     </Modal>
   );
