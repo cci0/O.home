@@ -270,6 +270,8 @@ export async function createSupabaseBackend(
           upsert: false,
         });
       if (error) throw error;
+      // 포크: 목록·위젯용 작은 판(t/이름.webp)도 함께 — 실패해도 원본은 이미 올라갔으니 조용히 넘긴다 (lib/imageThumbs)
+      try { await (await import('../imageThumbs')).putThumb(sb, path, blob); } catch { /* 원본으로 보인다 */ }
       return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
     },
 
@@ -280,7 +282,8 @@ export async function createSupabaseBackend(
         const { data, error } = await sb.storage.from(BUCKET).list('', { limit: PAGE, offset });
         if (error) throw error;
         const rows = data ?? [];
-        rows.forEach(f => out.push({
+        // 포크: 폴더(작은 썸네일 t/)는 파일이 아니다 — 목록에 넣으면 「안 쓰는 파일」로 잡힌다
+        rows.filter(f => f.id).forEach(f => out.push({
           ref: sb.storage.from(BUCKET).getPublicUrl(f.name).data.publicUrl,
           size: (f.metadata as { size?: number } | null)?.size ?? 0,
         }));
@@ -295,6 +298,8 @@ export async function createSupabaseBackend(
       if (!name) return;
       const { error } = await sb.storage.from(BUCKET).remove([name]);
       if (error) throw error;
+      // 포크: 작은 판도 함께 지운다 (없으면 그냥 넘어감)
+      try { await (await import('../imageThumbs')).removeThumb(sb, name); } catch { /* 무시 */ }
     },
 
     async deleteMember(id) {

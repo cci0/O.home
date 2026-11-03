@@ -5,9 +5,18 @@ import { marked } from 'marked';
 
 export type PostMode = 'md' | 'html';
 
+// 포크(전송량 줄이기): 본문 속 그림은 화면에 가까워질 때 받는다 — 긴 글 아래쪽 그림을 안 내려 보면 안 받는다
+let lazyHook = false;
+
 export function sanitizeHtml(html: string): string {
   // DOMPurify는 브라우저 DOM 필요 — SSR 프리렌더 시 빈 값 (클라이언트에서 렌더됨)
   if (typeof window === 'undefined') return '';
+  if (!lazyHook) {
+    lazyHook = true;
+    DOMPurify.addHook('afterSanitizeAttributes', node => {
+      if (node.tagName === 'IMG' && !node.getAttribute('loading')) node.setAttribute('loading', 'lazy');
+    });
+  }
   return DOMPurify.sanitize(html, {
     USE_PROFILES: { html: true },
     ADD_ATTR: ['style', 'target', 'align'],   // 스타일 자유 (6.3)

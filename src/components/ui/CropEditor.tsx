@@ -7,6 +7,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Modal } from './Modal';
 import { useBlobUrl } from '@/lib/blobStore';
+import { thumbUrlOf, markThumbMissing, THUMB_SIDE } from '@/lib/thumbUrl';   // 포크: 작은 썸네일
 
 /** x·y = 프레임 크기 대비 중심 오프셋 비율 (-0.5~0.5 근방), scale = 배율
  *  r (포크) = 잡을 때 프레임의 가로/세로 비 — 표시 칸 비율이 바뀌어도(화면 높이·상세 배치) 같은 곳이 가운데 오게 옮겨 준다
@@ -53,18 +54,38 @@ export function coverImgStyle(crop: CropValue | undefined, wide: boolean): React
 }
 
 /** 프레임 채움 크롭 이미지 — 컨테이너·원본 비율을 측정해 커버 방향을 자동 결정.
- *  부모는 position:relative(또는 absolute)여야 함. */
+ *  부모는 position:relative(또는 absolute)여야 함.
+ *  포크(전송량 줄이기, lib/imageThumbs):
+ *   · 화면에 가까워질 때만 받는다 (loading="lazy") — 목록 아래쪽 그림은 내려가야 받는다
+ *   · 칸이 작으면(그림이 보일 긴 변 ≤ 약 880px, 고해상도 화면 2배까지 반영) 작은 판을 받는다.
+ *     칸이 커지면 원본으로 올려 받고, 작은 판이 없으면 원본으로 돌아간다 */
 export function CropImg({ src, crop, alt }: { src: string; crop?: CropValue; alt?: string }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const natRef = useRef<{ w: number; h: number } | null>(null);
   // 포크: 커버 방향만이 아니라 프레임·원본 비율을 함께 기억 — 크롭을 지금 비율에 맞게 다시 계산한다(fitCrop)
   const [geo, setGeo] = useState<{ fr: number; nr: number } | null>(null);
+  // 포크: 작은 판(thumb)을 쓸지 원본(orig)을 쓸지 — 칸 크기를 재기 전엔 정하지 않는다
+  const thumb = thumbUrlOf(src);
+  const [pick, setPick] = useState<{ src: string; v: 'thumb' | 'orig' } | null>(null);
+  const mode: 'thumb' | 'orig' | null = !thumb ? 'orig' : pick && pick.src === src ? pick.v : null;
   const compute = () => {
     const r = wrapRef.current?.getBoundingClientRect();
+    if (!r || r.width <= 1 || r.height <= 1) return;
     const n = natRef.current;
-    if (r && n && r.width > 1 && r.height > 1 && n.h > 0) {
+    const sc = Math.min(3, Math.max(1, crop?.scale ?? 1));
+    const dpr = Math.min(2, (typeof window !== 'undefined' && window.devicePixelRatio) || 1);
+    // 그림이 실제로 그려질 긴 변(px) — 원본 비율을 알면 정확히, 모르면 칸 기준으로 어림
+    let need = sc * Math.max(r.width, r.height) * dpr;
+    if (n && n.h > 0) {
       const fr = r.width / r.height, nr = n.w / n.h;
+      const sz = nr >= fr ? { w: sc * nr / fr, h: sc } : { w: sc, h: sc * fr / nr };
+      need = Math.max(sz.w * r.width, sz.h * r.height) * dpr;
       setGeo(g => (g && Math.abs(g.fr - fr) < 0.002 && g.nr === nr ? g : { fr, nr }));
+    }
+    if (thumb) {
+      const v = need <= THUMB_SIDE * 1.1 ? 'thumb' : 'orig';
+      // 처음 정할 때 · 작은 판 → 원본으로 올릴 때만 바꾼다 (원본을 받은 뒤 작은 판으로 내리지 않는다)
+      setPick(p => (p && p.src === src && (p.v === 'orig' || v === 'thumb') ? p : { src, v }));
     }
   };
   useEffect(() => {
@@ -75,13 +96,15 @@ export function CropImg({ src, crop, alt }: { src: string; crop?: CropValue; alt
     ro.observe(el);
     return () => ro.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src]);
+  }, [src, crop?.scale]);
+  const shown = mode === 'thumb' ? thumb! : mode === 'orig' ? src : null;
   return (
     <div ref={wrapRef} style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt={alt ?? ''} draggable={false} decoding="async"
+      {shown && <img key={shown} src={shown} alt={alt ?? ''} draggable={false} decoding="async" loading="lazy"
         onLoad={e => { const im = e.currentTarget; natRef.current = { w: im.naturalWidth, h: im.naturalHeight }; compute(); }}
-        style={geo == null ? { opacity: 0 } : coverImgStyle(fitCrop(crop, geo.fr, geo.nr), geo.nr >= geo.fr)} />
+        onError={() => { if (mode === 'thumb' && thumb) { markThumbMissing(thumb); setPick({ src, v: 'orig' }); } }}
+        style={geo == null ? { opacity: 0 } : coverImgStyle(fitCrop(crop, geo.fr, geo.nr), geo.nr >= geo.fr)} />}
     </div>
   );
 }

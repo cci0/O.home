@@ -13,6 +13,7 @@ import React from 'react';
 import { useMenuSettings, currentMenuSettings, type MenuSettings } from './menuStore';
 import { KCheck } from '@/components/ui/Kit';
 import { ShrinkExisting } from './shrinkExisting';   // 이미 올린 이미지 줄이기 (포크)
+import { ThumbExisting } from './imageThumbs';       // 이미 올린 이미지에 작은 썸네일 (포크)
 
 export const MAX_SIDE = 2560;                 // 긴 변 최대 (px)
 const SKIP_UNDER = 1.2 * 1024 * 1024;         // 이보다 작은 파일은 건드리지 않는다
@@ -25,7 +26,7 @@ const confNow = (): ShrinkConf => {
   try { return (currentMenuSettings() as WithShrink).imgShrink ?? {}; } catch { return {}; }
 };
 
-async function decode(blob: Blob): Promise<{ img: CanvasImageSource; w: number; h: number; done: () => void } | null> {
+export async function decode(blob: Blob): Promise<{ img: CanvasImageSource; w: number; h: number; done: () => void } | null> {
   try {
     const bmp = await createImageBitmap(blob, { imageOrientation: 'from-image' });
     return { img: bmp, w: bmp.width, h: bmp.height, done: () => bmp.close() };
@@ -39,7 +40,7 @@ async function decode(blob: Blob): Promise<{ img: CanvasImageSource; w: number; 
   } catch { return null; }
 }
 
-const toBlob = (c: HTMLCanvasElement, type: string, q: number) =>
+export const toBlob = (c: HTMLCanvasElement, type: string, q: number) =>
   new Promise<Blob | null>(res => { try { c.toBlob(b => res(b), type, q); } catch { res(null); } });
 
 /**
@@ -110,6 +111,7 @@ export function ImageShrinkOptions() {
         <KCheck label="갤러리(그림 백업)도 축소 — 끄면 원본 그대로" checked={!!cur.gallery} onChange={v => set({ gallery: v })} />
       </div>
       <ShrinkExisting includeGallery={!!cur.gallery} />
+      <ThumbExisting />
     </div>
   );
 }
