@@ -41,7 +41,7 @@ export async function makeThumb(blob: Blob): Promise<Blob | null> {
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(d.img, 0, 0, w, h);
     d.done();
-    let out = await toBlob(c, 'image/webp', 0.82);
+    let out = await toBlob(c, 'image/webp', 0.9);   // 그림(선화)은 압축 티가 잘 나서 높게
     if (out && out.type !== 'image/webp') out = await toBlob(c, 'image/png', 1);   // WebP를 못 만드는 브라우저
     c.width = 0; c.height = 0;
     return out;

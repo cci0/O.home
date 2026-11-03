@@ -7,7 +7,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Modal } from './Modal';
 import { useBlobUrl } from '@/lib/blobStore';
-import { thumbUrlOf, markThumbMissing, THUMB_SIDE } from '@/lib/thumbUrl';   // 포크: 작은 썸네일
+import { thumbUrlOf, markThumbMissing, THUMB_USE_MAX, THUMB_PRE_MAX } from '@/lib/thumbUrl';   // 포크: 작은 썸네일
 
 /** x·y = 프레임 크기 대비 중심 오프셋 비율 (-0.5~0.5 근방), scale = 배율
  *  r (포크) = 잡을 때 프레임의 가로/세로 비 — 표시 칸 비율이 바뀌어도(화면 높이·상세 배치) 같은 곳이 가운데 오게 옮겨 준다
@@ -57,7 +57,8 @@ export function coverImgStyle(crop: CropValue | undefined, wide: boolean): React
  *  부모는 position:relative(또는 absolute)여야 함.
  *  포크(전송량 줄이기, lib/imageThumbs):
  *   · 화면에 가까워질 때만 받는다 (loading="lazy") — 목록 아래쪽 그림은 내려가야 받는다
- *   · 칸이 작으면(그림이 보일 긴 변 ≤ 약 880px, 고해상도 화면 2배까지 반영) 작은 판을 받는다.
+ *   · 칸이 작으면(그림이 실제 화소로 그려질 긴 변 ≤ 720px — 화면 배율 반영) 작은 판(800px)을 받는다.
+ *     메인 슬라이드처럼 큰 칸은 원본.
  *     칸이 커지면 원본으로 올려 받고, 작은 판이 없으면 원본으로 돌아간다 */
 export function CropImg({ src, crop, alt }: { src: string; crop?: CropValue; alt?: string }) {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -73,17 +74,20 @@ export function CropImg({ src, crop, alt }: { src: string; crop?: CropValue; alt
     if (!r || r.width <= 1 || r.height <= 1) return;
     const n = natRef.current;
     const sc = Math.min(3, Math.max(1, crop?.scale ?? 1));
-    const dpr = Math.min(2, (typeof window !== 'undefined' && window.devicePixelRatio) || 1);
+    const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
     // 그림이 실제로 그려질 긴 변(px) — 원본 비율을 알면 정확히, 모르면 칸 기준으로 어림
     let need = sc * Math.max(r.width, r.height) * dpr;
+    let max = THUMB_PRE_MAX;
     if (n && n.h > 0) {
+      max = THUMB_USE_MAX;
       const fr = r.width / r.height, nr = n.w / n.h;
       const sz = nr >= fr ? { w: sc * nr / fr, h: sc } : { w: sc, h: sc * fr / nr };
       need = Math.max(sz.w * r.width, sz.h * r.height) * dpr;
       setGeo(g => (g && Math.abs(g.fr - fr) < 0.002 && g.nr === nr ? g : { fr, nr }));
     }
     if (thumb) {
-      const v = need <= THUMB_SIDE * 1.1 ? 'thumb' : 'orig';
+      // 작은 판을 줄여서 보여 줄 만큼 여유가 있을 때만 (거의 같은 크기로 쓰면 선이 뭉개져 보인다 — 사용자 제보)
+      const v = need <= max ? 'thumb' : 'orig';
       // 처음 정할 때 · 작은 판 → 원본으로 올릴 때만 바꾼다 (원본을 받은 뒤 작은 판으로 내리지 않는다)
       setPick(p => (p && p.src === src && (p.v === 'orig' || v === 'thumb') ? p : { src, v }));
     }
